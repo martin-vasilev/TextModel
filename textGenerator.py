@@ -5,7 +5,7 @@ Created on Thu Oct 18 13:00:34 2018
 @author: mvasilev
 """
 
-def textGenerator(text, batch_size=5, height=400, width= 400, noise= 0, words_per_line= 12, max_lines= 5,
+def textGenerator(text, batch_size=5, height=200, width= 600, noise= 0, words_per_line= 12, max_lines= 5,
                    font= "Courier New", font_size= 14, save_img= False):
     
     import random
@@ -52,4 +52,18 @@ def textGenerator(text, batch_size=5, height=400, width= 400, noise= 0, words_pe
         
         text_list.append(string)
         
-    return text_list
+        ############
+        # Generate images using the text:
+        from PIL import Image, ImageDraw#, ImageFont
+        
+        img = Image.new('1', (width, height), color = 'white') # open image
+        d = ImageDraw.Draw(img) # draw canvas
+        d.multiline_text((10,10), string, spacing= 20, align= "left") # draw text
+        
+        if save_img:
+            img.save('img' + str(i+1)+ '.png')
+        
+        img_list.append(img)
+        
+        
+    return text_list, img_list
