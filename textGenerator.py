@@ -54,11 +54,12 @@ def textGenerator(text, batch_size=5, height=200, width= 600, noise= 0, words_pe
         
         ############
         # Generate images using the text:
-        from PIL import Image, ImageDraw#, ImageFont
+        from PIL import Image, ImageDraw, ImageFont
+        font = ImageFont.truetype('arial.ttf',14)
         
         img = Image.new('1', (width, height), color = 'white') # open image
         d = ImageDraw.Draw(img) # draw canvas
-        d.multiline_text((10,10), string, spacing= 20, align= "left") # draw text
+        d.multiline_text((10,10), string, font= font, spacing= 20, align= "left") # draw text
         
         if save_img:
             img.save('img' + str(i+1)+ '.png')
