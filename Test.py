@@ -15,4 +15,4 @@ text= data.split('\n')
 
 from textGenerator import textGenerator
 
-text_list, image_list= textGenerator(text, save_img=True)
+text_list, images= textGenerator(text, save_img=True, max_lines= 7)
