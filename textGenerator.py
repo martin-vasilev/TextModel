@@ -5,13 +5,14 @@ Created on Thu Oct 18 13:00:34 2018
 @author: mvasilev
 """
 
-def textGenerator(text, batch_size=5, height=200, width= 600, noise= 0, words_per_line= 12, max_lines= 5,
-                   font= "Courier New", font_size= 14, save_img= False):
+def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_per_line= 12, max_lines= 8,
+                   font= "arial", font_size= 12, save_img= False):
     
     import random
     import math
+    import numpy as np
     
-    img_list= []
+    images = np.zeros((batch_size, height,width))
     text_list= []
     
     # take random text strings:
@@ -55,7 +56,8 @@ def textGenerator(text, batch_size=5, height=200, width= 600, noise= 0, words_pe
         ############
         # Generate images using the text:
         from PIL import Image, ImageDraw, ImageFont
-        font = ImageFont.truetype('arial.ttf',14)
+        #whichFont= font+ '.ttf'
+        font = ImageFont.truetype('arial.ttf', font_size)
         
         img = Image.new('1', (width, height), color = 'white') # open image
         d = ImageDraw.Draw(img) # draw canvas
@@ -64,7 +66,7 @@ def textGenerator(text, batch_size=5, height=200, width= 600, noise= 0, words_pe
         if save_img:
             img.save('img' + str(i+1)+ '.png')
         
-        img_list.append(img)
+        img= (np.array(img)) # convert to numpy array
+        images[i, :, :]= img # add current image to batch image array
         
-        
-    return text_list, img_list
+    return text_list, images
