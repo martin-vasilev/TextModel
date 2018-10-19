@@ -6,7 +6,7 @@ Created on Thu Oct 18 13:00:34 2018
 """
 
 def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_per_line= 12, max_lines= 8,
-                   font= "arial", font_size= 12, save_img= False):
+                   font= "arial", font_size= 14, save_img= False):
     
     import random
     import math
@@ -55,18 +55,31 @@ def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_pe
         
         ############
         # Generate images using the text:
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont#, ImageFilter
         #whichFont= font+ '.ttf'
         font = ImageFont.truetype('arial.ttf', font_size)
         
-        img = Image.new('1', (width, height), color = 'white') # open image
+        img = Image.new('L', (width, height), color = 'white') # open image
+        # https://pillow.readthedocs.io/en/3.1.x/handbook/concepts.html#concept-modes
         d = ImageDraw.Draw(img) # draw canvas
         d.multiline_text((10,10), string, font= font, spacing= 20, align= "left") # draw text
         
-        if save_img:
-            img.save('img' + str(i+1)+ '.png')
-        
         img= (np.array(img)) # convert to numpy array
+        
+        ### Add noise:
+        from scipy import misc
+        from scipy.ndimage import gaussian_filter
+        img = gaussian_filter(img, sigma= noise)
+        
         images[i, :, :]= img # add current image to batch image array
+        
+        if save_img:
+            if noise != 0:
+                filename= 'img' + str(i+1)+ "_N"+ '.png'
+            else:
+                filename= 'img' + str(i+1)+ '.png'
+            misc.imsave(filename, img)
+            #im = Image.fromarray(img)
+            #im.save('img' + str(i+1)+ '.png')
         
     return text_list, images
