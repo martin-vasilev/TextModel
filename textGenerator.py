@@ -16,7 +16,7 @@ def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_pe
     text_list= []
     
     # take random text strings:
-    batch_texts= random.sample(text, 5)
+    batch_texts= random.sample(text, batch_size)
     
     
     # Generate text strings that will be used in the batch:
