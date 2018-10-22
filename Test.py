@@ -15,7 +15,7 @@ text= data.split('\n')
 
 from textGenerator import textGenerator
 
-text_list, images= textGenerator(text, save_img=True, max_lines= 7, noise= 0)
+text_list, images= textGenerator(text, save_img=True, max_lines= 4, batch_size= 20)
 
 # useful stuff:
 # http://www.scipy-lectures.org/advanced/image_processing/

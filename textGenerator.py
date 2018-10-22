@@ -5,7 +5,7 @@ Created on Thu Oct 18 13:00:34 2018
 @author: mvasilev
 """
 
-def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_per_line= 12, max_lines= 8,
+def textGenerator(text, input_method= "words", batch_size=5, height=200, width= 600, noise= 0, words_per_line= 12, max_lines= 4,
                    font= "arial", font_size= 14, save_img= False):
     
     import random
@@ -17,7 +17,6 @@ def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_pe
     
     # take random text strings:
     batch_texts= random.sample(text, batch_size)
-    
     
     # Generate text strings that will be used in the batch:
     for i in range(batch_size): # for each element in batch size..
@@ -59,17 +58,50 @@ def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_pe
         #whichFont= font+ '.ttf'
         font = ImageFont.truetype('arial.ttf', font_size)
         
-        img = Image.new('L', (width, height), color = 'white') # open image
+        #img = Image.new('L', (width, height), color = 'white') # open an empty canvas
         # https://pillow.readthedocs.io/en/3.1.x/handbook/concepts.html#concept-modes
+        
+        # open a random canvas image as background:
+        img= Image.open("canvas/" + str(np.random.randint(1, 10))+ ".jpg").convert('L')
+        
+        # crop canvas to desired size:
+        canvWidth, canvHeight= img.size # get canvas size
+        
+        # get a random square from the canvas to crop:
+        done= False
+        xDone= False
+        yDone= False
+
+        while not done:
+            xGuess= np.random.randint(1, canvWidth) # guess x start value
+            yGuess= np.random.randint(1, canvHeight) # guess y start value
+            
+            if (xGuess + width) <= canvWidth:
+                x1= xGuess
+                x2= xGuess+ width
+                xDone= True
+            
+            if (yGuess+ height) <= canvHeight:
+                y1= yGuess
+                y2= yGuess + height
+                yDone= True
+                
+            done= yDone and xDone # selection is ok if there is enough space to cut
+        
+        img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
+        
         d = ImageDraw.Draw(img) # draw canvas
         d.multiline_text((10,10), string, font= font, spacing= 20, align= "left") # draw text
         
+        # add compression/decompression variability to the image:
+        img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 90))
+        img= Image.open("template.jpeg").convert('L')
+        
         img= (np.array(img)) # convert to numpy array
         
-        ### Add noise:
-        from scipy import misc
-        from scipy.ndimage import gaussian_filter
-        img = gaussian_filter(img, sigma= noise)
+#        ### Add noise:
+#        from scipy.ndimage import gaussian_filter
+#        img = gaussian_filter(img, sigma= noise)
         
         images[i, :, :]= img # add current image to batch image array
         
@@ -78,6 +110,7 @@ def textGenerator(text, batch_size=5, height=300, width= 600, noise= 0, words_pe
                 filename= 'img' + str(i+1)+ "_N"+ '.png'
             else:
                 filename= 'img' + str(i+1)+ '.png'
+            from scipy import misc
             misc.imsave(filename, img)
             #im = Image.fromarray(img)
             #im.save('img' + str(i+1)+ '.png')
