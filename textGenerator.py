@@ -5,7 +5,7 @@ Created on Thu Oct 18 13:00:34 2018
 @author: mvasilev
 """
 
-def textGenerator(text, input_method= "words", batch_size=5, height=200, width= 600, noise= 0, words_per_line= 12, max_lines= 4,
+def textGenerator(text, input_method= "words", batch_size=5, height=150, width= 600, noise= 0, words_per_line= 12, max_lines= 4,
                    font= "arial", font_size= 14, save_img= False):
     
     import random
@@ -94,7 +94,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=200, width= 
         d.multiline_text((10,10), string, font= font, spacing= 20, align= "left") # draw text
         
         # add compression/decompression variability to the image:
-        img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 90))
+        img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
         img= Image.open("template.jpeg").convert('L')
         
         img= (np.array(img)) # convert to numpy array
