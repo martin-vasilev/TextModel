@@ -17,6 +17,31 @@ from textGenerator import textGenerator
 
 text_list, images= textGenerator(text, save_img=True, max_lines= 4, batch_size= 20)
 
+
+#useWords= batch_texts[i].split(' ')
+#textDone= False
+#currPos= 10 # starting x value of print function
+#w= 0
+#line=1
+#string= ""
+#while not textDone:
+#    if currPos+ (len(useWords[w])+1)*ppl < width-20: # if text still fits on current line..
+#        if w>0:
+#            string= string + " "+ useWords[w]
+#            currPos= currPos+ len(" "+ useWords[w])*ppl
+#        else:
+#            string= string + useWords[w]
+#            currPos= currPos+ len(useWords[w])*ppl
+#        
+#    else: # therwise move on next line..
+#        line= line+1
+#        currPos= 10
+#        string= string + "\n"+ useWords[w] # break line
+#    
+#    textDone= line== max_lines and currPos+ (len(useWords[w])+1)*ppl > width-20
+#    w= w+1 # go to next word
+##
+
 # useful stuff:
 # http://www.scipy-lectures.org/advanced/image_processing/
 
