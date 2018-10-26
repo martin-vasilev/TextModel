@@ -5,9 +5,12 @@ Created on Fri Oct 26 15:10:24 2018
 @author: mvasilev
 """
 
+minChar= 6*60
+
 import os
 import numpy as np
 from Corpus import Corpus
+from itertools import chain
 
 os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
 tokens= Corpus.SUBTLEX(20000) # get N SUBTLEX tokens
@@ -30,12 +33,39 @@ for i in range(len(text)):
             result.write(out[j])
             result.write(" ")
         result.write("\n")
+        
+        # check if string can still be saved:
+#        noList= []
+#        wrds= Corpus.strip(string, lower= False)
+#        for m in range(len(out)):
+#            rs= Corpus.find_substr(out[m], string)
+#            if len(rs)==0:
+#                rs= Corpus.find_substr(out[m].capitalize(), string)
+#            noList.append(rs)
+#        noList= list(chain(*noList))
+#        
+#        if len(noList)>0:
+#            if noList[noList.index(min(noList))]> minChar:
+#                string= string[0:min(noList)-1]
+#                file.write(string)
+#                file.write("\n")
+        
     else:
         result.write("0")
         result.write("\n")
-        
+#        
+#        maxStrings= len(string)/minChar
+#        if maxStrings>1:
+#            cX= 0
+#            for k in range(maxStrings):
+#               file.write(string[cX:cX+minChar])
+#               file.write("\n")
+#               cX= cX+ minChar
+#        
         file.write(string)
         file.write("\n")
+    if i % 100 == 0:
+        print(i)
         
 file.close()
 result.close()

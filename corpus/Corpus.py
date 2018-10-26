@@ -39,7 +39,7 @@ class Corpus(object):
     
     @staticmethod
     # Get word tokens from a string:
-    def strip(string):
+    def strip(string, lower= True):
         wrds= string.split(" ")
         newstr= string
         
@@ -68,11 +68,36 @@ class Corpus(object):
         newstr= newstr.replace('{', '')
         newstr= newstr.replace('[', '')
         newstr= newstr.replace(']', '')
+        newstr= newstr.replace('$', '')
+        
         
         newstr = ''.join([i for i in newstr if not i.isdigit()])# remove numbers
-        newstr= newstr.lower()# make all letters lowercase
+        
+        if lower:
+            newstr= newstr.lower()# make all letters lowercase
         
         # separate into words:
         wrds= newstr.split(" ")
         wrds = filter(None, wrds)
+        
+        if "i" in wrds and lower:
+            indices = [i for i, x in enumerate(wrds) if x == "i"]
+            for k in range(len(indices)):
+                wrds[indices[k]]= "i".upper() # I is upper case in subtlex-uk
+            
         return(wrds)
+    
+    @staticmethod
+    def find_substr(substring, string):
+        Done= False
+        indices= []
+        while not Done:
+            if substring in string:
+                att= string.index(substring)
+                indices.append(att)
+                string= string[0:att] + "@"*len(substring) + string[att+ len(substring):]
+            else:
+                Done= True
+
+        return indices
+                    
