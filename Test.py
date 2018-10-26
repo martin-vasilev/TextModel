@@ -15,7 +15,7 @@ text= data.split('\n')
 
 from textGenerator import textGenerator
 
-text_list, images= textGenerator(text, save_img=True, max_lines= 4, batch_size= 20)
+text_list, images= textGenerator(text, save_img=True, max_lines= 6, batch_size= 20)
 
 
 #useWords= batch_texts[i].split(' ')

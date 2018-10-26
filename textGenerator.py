@@ -7,7 +7,7 @@ Created on Thu Oct 18 13:00:34 2018
 
 # courier: 14 char: 8ppl
 
-def textGenerator(text, input_method= "words", batch_size=5, height=140, width= 600, noise= 0, words_per_line= 12, max_lines= 4,
+def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 480, noise= 0, words_per_line= 12, max_lines= 4,
                    font= "cour", font_size= 14, ppl=8, save_img= False):
     
     import random
@@ -53,7 +53,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=140, width= 
 #            start= start +words_per_line
         useWords= batch_texts[i].split(' ')
         textDone= False
-        currPos= 10 # starting x value of print function
+        currPos= 1 # starting x value of print function
         w= 0
         line=1
         string= ""
@@ -71,7 +71,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=140, width= 
                 if line> max_lines:
                     textDone= True
                 else:
-                    currPos= 10 + len(useWords[w])*ppl
+                    currPos= 1 + len(useWords[w])*ppl
                     string= string + "\n"+ useWords[w] # break line
             
             #textDone= line== max_lines and currPos+ (len(useWords[w])+1)*ppl > width-20
@@ -120,7 +120,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=140, width= 
         img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
         
         d = ImageDraw.Draw(img) # draw canvas
-        d.multiline_text((10,10), string, font= font, spacing= 20, align= "left") # draw text
+        d.multiline_text((1,1), string, font= font, spacing= 20, align= "left") # draw text
         
         # add compression/decompression variability to the image:
         img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
