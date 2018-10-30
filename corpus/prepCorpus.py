@@ -12,7 +12,7 @@ os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
 
 
 ### Open output file for writing:
-#file = open("COCA_academ.txt", "w") 
+#file = open("COCA_acad.txt", "w") 
 #file = open("COCA_fict.txt", "w") 
 #file = open("COCA_mag.txt", "w") 
 file = open("COCA_news.txt", "w") 
@@ -42,7 +42,9 @@ for k in range(len(allFiles)):
     data = data.replace("<P>", "")
     data = data.replace("</P>", "")
     data = data.replace("<>", "")
-    
+#    data = data.replace("do n't", "don't")
+#    data = data.replace("did n't", "didn't")
+    #data = data.replace("wo n't", "won't")
     
     # get passages:
     text= data.split('\n')
@@ -81,7 +83,7 @@ for k in range(len(allFiles)):
                     num= map(int, re.findall(r'\d', string))
                     if len(num) < len(string)/20: # if numbers in text are max 5% of all chars
                         if string[1]!= ".": # some reference entries
-                            if not "Journal" in string and not "ISBN" in string and not "doi:" in string and not "Press" in string and not "conference" in string:
+                            if not "Journal" in string and not "ISBN" in string and not "doi:" in string and not "Press" in string and not "conference" in string and not 'http' in string:
                                 
                                 string = string.replace("  ", " ")
                                 string = string.replace(" ,", ",")

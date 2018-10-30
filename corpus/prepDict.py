@@ -8,17 +8,22 @@ Created on Fri Oct 26 15:10:24 2018
 minChar= 6*60
 
 import os
+os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
 import numpy as np
 from Corpus import Corpus
 from itertools import chain
 
-os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
+
 tokens= Corpus.SUBTLEX(20000) # get N SUBTLEX tokens
 
-file = open("good.txt", "w")
-result= open("result.txt", "w")
+#file = open("good.txt", "w")
+#result= open("result.txt", "w")
 
-with open("COCA_news.txt", 'r') as myfile:
+file = open("good.txt", "a")
+result= open("result.txt", "a")
+
+#with open("COCA_news.txt", 'r') as myfile:
+with open("COCA_acad.txt", 'r') as myfile:
     data= myfile.read()
     text= data.split('\n')
 
@@ -27,6 +32,7 @@ for i in range(len(text)):
     wrds= Corpus.strip(string)
     out = np.setdiff1d(wrds, tokens)
     out= out.tolist()
+    string= string.replace(" n't", "n't")
     
     if len(out)>0:
         for j in range(len(out)):
@@ -35,28 +41,44 @@ for i in range(len(text)):
         result.write("\n")
         
         # check if string can still be saved:
-#        noList= []
-#        wrds= Corpus.strip(string, lower= False)
-#        for m in range(len(out)):
-#            rs= Corpus.find_substr(out[m], string)
-#            if len(rs)==0:
-#                rs= Corpus.find_substr(out[m].capitalize(), string)
-#            noList.append(rs)
-#        noList= list(chain(*noList))
-#        
-#        if len(noList)>0:
-#            if noList[noList.index(min(noList))]> minChar:
-#                string= string[0:min(noList)-1]
-#                file.write(string)
-#                file.write("\n")
+        noList= []
+        wrds= Corpus.strip(string, lower= False)
+        for m in range(len(out)):
+            rs= Corpus.find_substr(out[m], string)
+            if len(rs)==0:
+                rs= Corpus.find_substr(out[m].capitalize(), string)
+            noList.append(rs)
+        noList= list(chain(*noList))
+        
+        if len(noList)>0:
+            if noList[noList.index(min(noList))]> minChar:
+                string= string[0:min(noList)-1]
+                file.write(string)
+                file.write("\n")
+            elif len(string)> noList[noList.index(max(noList))]+ minChar:
+                string= string[max(noList):]
+                loc= string.find(" ")+1
+                string= string[loc:]
+                
+                if len(string)>= minChar:    
+                    file.write(string)
+                    file.write("\n")
         
     else:
         result.write("0")
         result.write("\n")
 #        
-#        maxStrings= len(string)/minChar
-#        if maxStrings>1:
-#            cX= 0
+        maxStrings= len(string)/minChar
+        if maxStrings>1:
+               file.write(string[0:minChar])
+               file.write("\n") 
+               
+               string= string[minChar:]
+               loc= string.find(" ")+1
+               string= string[loc:]
+               if len(string)>= minChar:
+                   file.write(string)
+                   file.write("\n")  
 #            for k in range(maxStrings):
 #               file.write(string[cX:cX+minChar])
 #               file.write("\n")

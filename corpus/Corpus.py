@@ -3,17 +3,13 @@
 Created on Fri Oct 26 12:30:42 2018
 
 @author: mvasilev
-"""
-
+"""    
 
 class Corpus(object):
     
     @staticmethod
     # take N most frequent tokens from SUBTLEX-UK database:
-    def SUBTLEX(N, dir= "C:\Users\mvasilev\TextModel\corpus\SUBTLEX-UK.txt"):
-        with open(dir, 'r') as f:
-            corpustxt= f.readlines()
-        
+    def SUBTLEX(N, dir= "C:\Users\mvasilev\TextModel\corpus\SUBTLEX-US.txt", UK=False):        
         import re
         
         token= []
@@ -25,8 +21,11 @@ class Corpus(object):
                 if i>0:
                     string= re.split(r'\t+', corpustxt[i])
                     token.append(string[0])
-        
-                    freq.append(string[5])
+                    
+                    if not UK:
+                        freq.append(string[14])
+                    else:
+                        freq.append(string[5])
         
         # sort tokens by frequency:
         Z = zip(freq, token)
@@ -50,7 +49,7 @@ class Corpus(object):
         newstr= newstr.replace('#', '')
         newstr= newstr.replace(':', '')
         newstr= newstr.replace(';', '')
-        newstr= newstr.replace('-', '')
+        #newstr= newstr.replace('-', '')
         newstr= newstr.replace('!', '')
         newstr= newstr.replace('?', '')
         newstr= newstr.replace('*', '')
@@ -69,9 +68,30 @@ class Corpus(object):
         newstr= newstr.replace('[', '')
         newstr= newstr.replace(']', '')
         newstr= newstr.replace('$', '')
+        newstr= newstr.replace('/', '')
+        newstr= newstr.replace('|', '')
+        newstr= newstr.replace("' ", " ")
         
+        ### language abreviations and so on:
+        newstr = newstr.replace("wo n't", "will not")
+        newstr= newstr.replace("'s", " s")
+        newstr= newstr.replace("s'", " s")
+        newstr= newstr.replace("n't", "not")
+        newstr= newstr.replace("'re", " are")
+        newstr= newstr.replace("'ve", " have")
+        newstr= newstr.replace("'ll", " will")
+        newstr= newstr.replace("'d", " would")
+        newstr= newstr.replace("i'm", "I am")
+        newstr= newstr.replace("'m", " am")
         
+         
         newstr = ''.join([i for i in newstr if not i.isdigit()])# remove numbers
+        if "-" in newstr: # for compound words
+            newstr= newstr.split("-") 
+            newstr= ' '.join(newstr)
+        if "/" in newstr:
+            newstr= newstr.split("/")
+            newstr= ' '.join(newstr)
         
         if lower:
             newstr= newstr.lower()# make all letters lowercase
@@ -100,4 +120,13 @@ class Corpus(object):
                 Done= True
 
         return indices
-                    
+    
+    @staticmethod
+    def unique_list(list):
+        uniq_list = []
+        uniq_set = set()
+        for item in list:
+           if item not in uniq_set:
+                uniq_list.append(item)
+                uniq_set.add(item)
+        return uniq_list

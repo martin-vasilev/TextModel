@@ -7,10 +7,11 @@ Created on Thu Oct 18 13:00:34 2018
 
 # courier: 14 char: 8ppl
 
-def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 480, noise= 0, words_per_line= 12, max_lines= 4,
-                   font= "cour", font_size= 14, ppl=8, save_img= False):
+def textGenerator(text, input_method= "text", batch_size=5, height=120, width= 480, max_lines= 6,
+                  font_size= 14, ppl=8, save_img= False):
     
     import random
+    import sys 
 #    import math
     import numpy as np
     
@@ -18,39 +19,22 @@ def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 
     text_list= []
     
     # take random text strings:
-    batch_texts= random.sample(text, batch_size)
+    
+    if input_method== "text":
+        batch_texts= random.sample(text, batch_size)
+    elif input_method== "words": # random word input method
+        batch_texts= []
+        words= random.sample(text, batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
+        for k in range(batch_size):
+            string= " ".join(words[0:120])
+            batch_texts.append(string)
+            del words[0:120] # remove selection from the remaining words
+    else:
+        sys.exit("Input method not supported!")
     
     # Generate text strings that will be used in the batch:
     for i in range(batch_size): # for each element in batch size..
-#        MaxNwords=  words_per_line*max_lines # max number of words given input constraints
-#        useText= batch_texts[i]
-#        word_list= useText.split(' ')
-#        
-#        if len(word_list)> MaxNwords: # get only words we need (if text is longer)
-#            useWords= word_list[0:MaxNwords]
-#        else: # otherwise take what's available
-#            useWords= word_list
-#        
-#        # Parse text into lines:
-#        # possible # of lines given input (necessary if text is smaller than what is needed):
-#        actualNlines= int(math.ceil(len(useWords)/words_per_line))
-#        
-#        # create string of text to be used:
-#        start= 0
-#        string= ""
-#        for j in range(actualNlines):
-#            if j== actualNlines:
-#                line= [useWords[k] for k in range(start, len(useWords)-1)]
-#            else:
-#                line= [useWords[k] for k in range(start, start+words_per_line)]
-#            
-#            line_string= ' '.join(line)
-#            
-#            if j>0: # if not first line:
-#                string= string+ "\n"+ line_string
-#            else:
-#                string= line_string # 1st line
-#            start= start +words_per_line
+
         useWords= batch_texts[i].split(' ')
         textDone= False
         currPos= 1 # starting x value of print function
@@ -78,7 +62,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 
             w= w+1 # go to next word
             if w== len(useWords): # no more text to use, stop
                 textDone= True
-        
+        string= string.lower() # make string lower case
         text_list.append(string)
         
         ############
@@ -120,7 +104,7 @@ def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 
         img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
         
         d = ImageDraw.Draw(img) # draw canvas
-        d.multiline_text((1,1), string, font= font, spacing= 20, align= "left") # draw text
+        d.multiline_text((1,1), string, font= font, spacing= 8, align= "left") # draw text
         
         # add compression/decompression variability to the image:
         img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
@@ -128,20 +112,11 @@ def textGenerator(text, input_method= "words", batch_size=5, height=250, width= 
         
         img= (np.array(img)) # convert to numpy array
         
-#        ### Add noise:
-#        from scipy.ndimage import gaussian_filter
-#        img = gaussian_filter(img, sigma= noise)
-        
         images[i, :, :]= img # add current image to batch image array
         
         if save_img:
-            if noise != 0:
-                filename= 'img' + str(i+1)+ "_N"+ '.png'
-            else:
-                filename= 'img' + str(i+1)+ '.png'
+            filename= 'img' + str(i+1)+ '.png'
             from scipy import misc
             misc.imsave(filename, img)
-            #im = Image.fromarray(img)
-            #im.save('img' + str(i+1)+ '.png')
-        
+
     return text_list, images
