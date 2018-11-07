@@ -7,6 +7,8 @@ Created on Thu Oct 18 13:14:21 2018
 
 import os
 import sys
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms, utils
 
 os.chdir('D:\\R\\TextModel')
 sys.path.insert(0, './corpus')
