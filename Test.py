@@ -8,7 +8,7 @@ Created on Thu Oct 18 13:14:21 2018
 import os
 import sys
 
-os.chdir('C:\\Users\\mvasilev\\TextModel')
+os.chdir('D:\\R\\TextModel')
 sys.path.insert(0, './corpus')
 
 # load txt data:

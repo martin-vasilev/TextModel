@@ -9,8 +9,9 @@ class Corpus(object):
     
     @staticmethod
     # take N most frequent tokens from SUBTLEX-UK database:
-    def SUBTLEX(N, dir= "C:\Users\mvasilev\TextModel\corpus\SUBTLEX-US.txt", UK=False):        
+    def SUBTLEX(N, dir= "corpus\SUBTLEX-US.txt", UK=False):        
         import re
+        import sys
         
         token= []
         freq= []
@@ -28,8 +29,11 @@ class Corpus(object):
                         freq.append(string[5])
         
         # sort tokens by frequency:
-        Z = zip(freq, token)
-        Z.sort(reverse= True)
+        if sys.version_info[0] < 3:
+            Z = zip(freq, token)
+            Z.sort(reverse= True)
+        else:
+            Z= sorted(zip(freq, token), reverse= True)
         token_sorted = [x for y, x in Z]
         freq.sort(reverse= True)
         out= token_sorted[0:N]
