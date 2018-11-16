@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b169e2ff-8510-4b5d-ad5a-0ce35353cd55" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/R_User_Library.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/Test2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TextDataset.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/corpus/Corpus.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/corpus/check_len.py" beforeDir="false" afterPath="$PROJECT_DIR$/corpus/check_len.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/corpus/check_token.py" beforeDir="false" afterPath="$PROJECT_DIR$/corpus/check_token.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/Tutorial.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/0805personali01.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/1084239450_e76e00b7e7.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/10comm-decarlo.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/110276240_bec305da91.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/1198_0_861.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/137341995_e7c48e9a75.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/1383023626_8a49e4879a.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/144044282_87cf3ff76e.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/152601997_ec6429a43c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/1549040388_b99e9fa295.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/1878519279_f905d4f34e.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2046713398_91aaa6fe1c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2173711035_dbd53b4f9f.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2210514040_6b03ff2629.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2322901504_08122b01ba.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2327253037_66a61ea6fe.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2328398005_d328a70b4c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2370961440_6bc8ce346c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2382SJ8.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/252418361_440b75751b.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/262007783_943bbcf613.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2633371780_45b740b670.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2647088981_60e9fe40cd.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2711409561_a0786a3d3d.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2722779845_7fcb64a096.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2795838930_0cc5aa5f41.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2902323565_100017b63c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2902760364_89c50bde40.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/2956581526_cd803f2daa.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/297448785_b2dda4b2c0.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/299733036_fff5ea6f8e.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/303808204_1f744bc407.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3074791551_baee7fa0c1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3152653555_68322314f3.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3264867945_fe18d442c1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3273658251_b95f65c244.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3298715079_5af7c78fcb.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3325611505_ddc7beffa1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3362762930_24f76cb89c.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/343583208_e986824d77.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3461016494_56cce9c984.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/348272697_832ce65324.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3534188114_2108895291.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3534189272_8ef88ba368.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3555944509_7b477069c6.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3574737496_6ee8207045.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/362167809_d5a5dcbfdb.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/363149951_8be04dc6c0.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3638950581_3387685d3a.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3646828311_bfeb429ef7.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3689162471_5f9ffb5aa0.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3718903026_c1bf5dfcf8.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3790616528_297c0ac935.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3855944735_e252959937.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3856149136_d4595ffdd4.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/3872768751_e60d7fdbd5.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/529447797_0f9d2fb756.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/57635685_d41c98f8ca.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/809285949_6889026b53.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/92053278_be61a225d2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/96063776_bdb3617b64.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/97308305_4b737d0873.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/britney-bald.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/create_landmark_dataset.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/deeny.peggy.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/face_landmarks.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/matt-mathes.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/person-7.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/person.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/person_TjahjonoDGondhowiardjo.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/faces/personalpic.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/template.jpeg" beforeDir="false" afterPath="$PROJECT_DIR$/template.jpeg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textGenerator.py" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FUSProjectUsageTrigger">
+    <session id="1744376292">
+      <usages-collector id="statistics.lifecycle.project">
+        <counts>
+          <entry key="project.closed" value="1" />
+          <entry key="project.open.time.1" value="1" />
+          <entry key="project.opened" value="1" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.edit">
+        <counts>
+          <entry key="Python Console" value="3" />
+          <entry key="py" value="3" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.edit">
+        <counts>
+          <entry key="Python" value="6" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.open">
+        <counts>
+          <entry key="py" value="1" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.open">
+        <counts>
+          <entry key="Python" value="1" />
+        </counts>
+      </usages-collector>
+    </session>
+  </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Test2.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="323">
+              <caret line="19" column="14" lean-forward="true" selection-start-line="19" selection-start-column="14" selection-end-line="19" selection-end-column="14" />
+              <folding>
+                <element signature="e#84#96#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/Test2.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="85" />
+    <option name="y" value="25" />
+    <option name="width" value="1750" />
+    <option name="height" value="970" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="TextModel" type="b2602c69:ProjectViewProjectNode" />
+              <item name="TextModel" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="C:/Program Files/R/R-3.5.1/bin/R.exe" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration name="Test2" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="TextModel" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Test2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Test2" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b169e2ff-8510-4b5d-ad5a-0ce35353cd55" name="Default Changelist" comment="" />
+      <created>1542363829355</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1542363829355</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="68" y="20" width="1400" height="776" extended-state="0" />
+    <layout>
+      <window_info id="Favorites" side_tool="true" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1641791" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Version Control" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Python Console" sideWeight="0.49925372" weight="0.34836704" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info anchor="bottom" id="Event Log" sideWeight="0.50074625" side_tool="true" weight="0.32970452" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.32970452" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info active="true" anchor="right" id="R Packages" visible="true" weight="0.32910448" />
+      <window_info anchor="right" id="R Graphics" weight="0.32910448" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/Test2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="19" column="14" lean-forward="true" selection-start-line="19" selection-start-column="14" selection-end-line="19" selection-end-column="14" />
+          <folding>
+            <element signature="e#84#96#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

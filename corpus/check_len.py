@@ -9,15 +9,15 @@ import os
 #import numpy as np
 from Corpus import Corpus
 #from itertools import chain
-os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
+os.chdir('D:\\R\\TextModel\\corpus')
 
 minChar= 60*6
-file = open("corpus_final.txt", "w")
+file = open("corpus_wiki.txt", "w")
 
 with open("good_checked.txt", 'r') as myfile:
     data= myfile.read()
     text= data.split('\n')
-text = filter(None, text)
+text = list(filter(None, text))
 text= Corpus.unique_list(text)
 
 a= 1
