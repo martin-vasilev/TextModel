@@ -2,7 +2,7 @@
 """
 Created on Wed Nov  7 11:43:35 2018
 
-@author: Martin Vasilev
+@author: Martin R. Vasilev
 """
 from torch.utils.data import Dataset
 from core.Corpus import Corpus
@@ -12,9 +12,10 @@ class TextDataset(Dataset):
 
     def __init__(self, txt_dir, corpus_dir, N= 20000):
         """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with the corpus file.
+        Input:
+            txt_dir (string): Path to the text corpus file containing the input strings.
+            root_dir (string): Directory with the SUBTLEX-US corpus file (used for getting dictionary).
+            N: number of tokens to be used in the dictionary.
         """
         # load txt data:
         with open(txt_dir, 'r') as myfile:
@@ -26,19 +27,38 @@ class TextDataset(Dataset):
     def __len__(self):
         return len(self.text)
     
-    def GetText(self, input_method= "text", batch_size=5, height=120, width= 480, max_lines= 6,
+    def GetText(self, input_method= "text", batch_size=64, height=120, width= 480, max_lines= 6,
                   font_size= 14, ppl=8):
+        
+        """
+        Generates a batch to be used in the model training. It outputs a matrix (N_batch, H, W) containing 
+        the text images and a list containing the character strings. Note that these are grayscale images, so
+        they always have only 1 channel.
+        
+        Input:
+            input_method: a character denoting what type of text to use. Default ('text') just used natural 
+                          language text taken from the corpus. Alternatively, 'words' creates a "text" 
+                          consisting of randomly-generated words (taken from the dictionary, i.e., SUBTLEX-US).
+            batch_size:   number of images to use in a batch
+            height:       height of the text image
+            width:        width of the text image
+            max_lines:    number of lines of text in the image. Note that the model has been developed with the
+                          default number of lines. Changing this may alter model performance
+            font_size:    size of the font to be use (default font is Courier). If you change the font of the text,
+                          be sure to used a fixed-wdith (i.e., monospaced) alternative.
+            ppl:          pixels per letter. This denoes the width (in pixels) of each letter. Because we use a 
+                          monospaced font, this number is a constant.
+        """
     
         import random
-        import sys 
-    #    import math
+        import sys
         import numpy as np
+        from PIL import Image, ImageDraw, ImageFont#, ImageFilter
         
         images = np.zeros((batch_size, height,width))
         text_list= []
         
         # take random text strings:
-        
         if input_method== "text":
             batch_texts= random.sample(self.text, batch_size)
         elif input_method== "words": # random word input method
@@ -86,12 +106,7 @@ class TextDataset(Dataset):
             
             ############
             # Generate images using the text:
-            from PIL import Image, ImageDraw, ImageFont#, ImageFilter
-            #whichFont= font+ '.ttf'
             font = ImageFont.truetype('Fonts/cour.ttf', font_size)
-            
-            #img = Image.new('L', (width, height), color = 'white') # open an empty canvas
-            # https://pillow.readthedocs.io/en/3.1.x/handbook/concepts.html#concept-modes
             
             # open a random canvas image as background:
             img= Image.open("canvas/" + str(np.random.randint(1, 10))+ ".jpg").convert('L')
@@ -135,13 +150,3 @@ class TextDataset(Dataset):
             sample= {'images': images, 'text': text_list}
     
         return sample
-
-#    def __getitem__(self, idx):
-#        img_name = os.path.join(self.root_dir,
-#                                self.landmarks_frame.iloc[idx, 0])
-#        image = io.imread(img_name)
-#        landmarks = self.landmarks_frame.iloc[idx, 1:].as_matrix()
-#        landmarks = landmarks.astype('float').reshape(-1, 2)
-#        sample = {'image': image, 'landmarks': landmarks}
-#
-#        return sample
