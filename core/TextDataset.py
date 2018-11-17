@@ -27,8 +27,8 @@ class TextDataset(Dataset):
     def __len__(self):
         return len(self.text)
     
-    def GetText(self, input_method= "text", batch_size=64, height=120, width= 480, max_lines= 6,
-                  font_size= 14, ppl=8):
+    def GetText(self, input_method= "text", batch_size=32, height=120, width= 480, max_lines= 6,
+                  font_size= 14, ppl=8, V_spacing= 7, uppercase=True, save_img= False):
         
         """
         Generates a batch to be used in the model training. It outputs a matrix (N_batch, H, W) containing 
@@ -48,12 +48,19 @@ class TextDataset(Dataset):
                           be sure to used a fixed-wdith (i.e., monospaced) alternative.
             ppl:          pixels per letter. This denoes the width (in pixels) of each letter. Because we use a 
                           monospaced font, this number is a constant.
+                          14:8, 12:7,
+            V_spacing     Vertical spacing of the text (i.e., how many blank pixels are between lines)  
+            uppercase     A logical indicating whether to format the text uppercase or not  
+            
+        Output:
+            A dict containing the image matrix and text list
         """
     
         import random
         import sys
         import numpy as np
         from PIL import Image, ImageDraw, ImageFont#, ImageFilter
+        from scipy import misc
         
         images = np.zeros((batch_size, height,width))
         text_list= []
@@ -101,7 +108,10 @@ class TextDataset(Dataset):
                 w= w+1 # go to next word
                 if w== len(useWords): # no more text to use, stop
                     textDone= True
-            string= string.lower() # make string lower case
+            if uppercase:        
+                string= string.upper() # make string upper case
+            else:
+                string= string.lower() # make string lower case
             text_list.append(string)
             
             ############
@@ -138,7 +148,7 @@ class TextDataset(Dataset):
             img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
             
             d = ImageDraw.Draw(img) # draw canvas
-            d.multiline_text((1,1), string, font= font, spacing= 8, align= "left") # draw text
+            d.multiline_text((1,1), string, font= font, spacing= V_spacing, align= "left") # draw text
             
             # add compression/decompression variability to the image:
             img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
@@ -148,5 +158,9 @@ class TextDataset(Dataset):
             images[i, :, :]= img # add current image to batch image array
             
             sample= {'images': images, 'text': text_list}
-    
+            
+            if save_img:
+                filename= 'img' + str(i+1)+ '.png'
+                misc.imsave(filename, img)
+
         return sample

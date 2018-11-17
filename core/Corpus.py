@@ -2,7 +2,7 @@
 """
 Created on Fri Oct 26 12:30:42 2018
 
-@author: mvasilev
+@author: Martin R. Vasilev
 """    
 
 class Corpus(object):
