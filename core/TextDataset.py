@@ -23,12 +23,13 @@ class TextDataset(Dataset):
         self.text= data.split('\n')
         
         self.tokens= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
+        self.Ntokens= len(self.tokens)
 
     def __len__(self):
         return len(self.text)
     
     def GetText(self, input_method= "text", batch_size=32, height=120, width= 480, max_lines= 6,
-                  font_size= 14, ppl=8, V_spacing= 7, uppercase=True, save_img= False):
+                  font_size= 14, ppl=8, V_spacing= 7, uppercase= False, save_img= False):
         
         """
         Generates a batch to be used in the model training. It outputs a matrix (N_batch, H, W) containing 
@@ -50,7 +51,8 @@ class TextDataset(Dataset):
                           monospaced font, this number is a constant.
                           14:8, 12:7,
             V_spacing     Vertical spacing of the text (i.e., how many blank pixels are between lines)  
-            uppercase     A logical indicating whether to format the text uppercase or not  
+            uppercase     A logical indicating whether to format the text uppercase or not
+            save_img      A logical indicating whether to save images locally (for testing)
             
         Output:
             A dict containing the image matrix and text list
@@ -63,6 +65,7 @@ class TextDataset(Dataset):
         from scipy import misc
         
         images = np.zeros((batch_size, height,width))
+        oneHot = np.zeros((self.Ntokens, batch_size))
         text_list= []
         
         # take random text strings:
@@ -112,7 +115,7 @@ class TextDataset(Dataset):
                 string= string.upper() # make string upper case
             else:
                 string= string.lower() # make string lower case
-            text_list.append(string)
+            text_list.append(string) # add to text list
             
             ############
             # Generate images using the text:
@@ -157,10 +160,45 @@ class TextDataset(Dataset):
             img= (np.array(img)) # convert to numpy array            
             images[i, :, :]= img # add current image to batch image array
             
-            sample= {'images': images, 'text': text_list}
-            
             if save_img:
                 filename= 'img' + str(i+1)+ '.png'
                 misc.imsave(filename, img)
-
+                
+            # Turn text into a one-hot vector:
+            string= string.replace('\n', ' ')
+            wrds= Corpus.strip(string)
+            
+            for t in range(len(wrds)):
+                if wrds[t] in self.tokens:
+                    ind= self.tokens.index(wrds[t])
+                    oneHot[ind,i]= 1
+                else:
+                    print(wrds[t]+ " not found in dictionary")
+#                    # to deal with compound words which are not detected for some reason..
+#                    Done= False
+#                    st= ""
+#                    count= 0
+#                    while not Done:
+#                        st= st+ wrds[t][count]
+#                        if st not in self.tokens:
+#                            count= count+1
+#                        else:
+#                            st1= st
+#                            ind= self.tokens.index(st1)
+#                            oneHot[ind,i]= 1
+#                            
+#                            st2= wrds[t].replace(st1, "")
+#                            if st2 in self.tokens:
+#                                ind= self.tokens.index(st2)
+#                                oneHot[ind,i]= 1
+#                            else:
+#                                print(wrds[t]+ " not found in dictionary")
+#                                print(st2)
+#                            Done= True
+#                            
+#                        if count== len(wrds[t]): # prevent inf loop
+#                            Done= True
+                    
+               
+        sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
         return sample

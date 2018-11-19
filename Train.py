@@ -64,19 +64,19 @@ def main():
     Data= TextDataset(txt_dir= os.getcwd()+data_dir, corpus_dir= os.getcwd()+token_dir)
     
     # Encoder (conv net):
-    encoder = Encoder()
+    encoder= Encoder()
     encoder.fine_tune(fine_tune_encoder)
     encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
                                              lr=encoder_lr) if fine_tune_encoder else None
                                          
     # Decoder:
-    decoder = DecoderWithAttention(attention_dim=attention_dim,
-                                       embed_dim=emb_dim,
-                                       decoder_dim=decoder_dim,
+    decoder = DecoderWithAttention(attention_dim= attention_dim,
+                                       embed_dim= emb_dim,
+                                       decoder_dim= decoder_dim,
                                        vocab_size= Ntokens,
-                                       dropout=dropout)
-    decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
-                                             lr=decoder_lr)
+                                       dropout= dropout)
+    decoder_optimizer = torch.optim.Adam(params= filter(lambda p: p.requires_grad, decoder.parameters()),
+                                             lr= decoder_lr)
     
     # Move to GPU, if available
     decoder = decoder.to(device)
