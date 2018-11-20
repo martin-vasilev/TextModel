@@ -12,7 +12,7 @@ class TextDataset(Dataset):
 
     def __init__(self, txt_dir, corpus_dir, N= 20000, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False):
+                 save_img= False, forceRGB= False):
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -34,14 +34,16 @@ class TextDataset(Dataset):
             V_spacing     Vertical spacing of the text (i.e., how many blank pixels are between lines)  
             uppercase     A logical indicating whether to format the text uppercase or not
             save_img      A logical indicating whether to save the images locally (for testing)
+            forceRGB      Make it output an RGB (3-channel) image (used for testing/ development)
         """
         # load txt data:
         with open(txt_dir, 'r') as myfile:
             data= myfile.read()
         self.text= data.split('\n')
+        self.vocab= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
         
-        self.tokens= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
-        self.Ntokens= len(self.tokens)
+        # Other parameters:
+        self.vocab_size= len(self.vocab)
         self.input_method= input_method
         self.batch_size= batch_size
         self.height= height
@@ -52,6 +54,7 @@ class TextDataset(Dataset):
         self.V_spacing= V_spacing
         self.uppercase= uppercase
         self.save_img= save_img
+        self.forceRGB= forceRGB
 
     def __len__(self):
         return len(self.text)
@@ -75,9 +78,10 @@ class TextDataset(Dataset):
         import numpy as np
         from PIL import Image, ImageDraw, ImageFont#, ImageFilter
         from scipy import misc
+        import torch
         
         images = np.zeros((self.batch_size, self.height, self.width))
-        oneHot = np.zeros((self.Ntokens, self.batch_size))
+        oneHot = np.zeros((self.vocab_size, self.batch_size))
         text_list= []
         
         # take random text strings:
@@ -88,7 +92,7 @@ class TextDataset(Dataset):
                 batch_texts= self.text[item]
         elif self.input_method== "words": # random word input method
             batch_texts= []
-            words= random.sample(self.tokens, self.batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
+            words= random.sample(self.vocab, self.batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
             for k in range(self.batch_size):
                 string= " ".join(words[0:120])
                 batch_texts.append(string)
@@ -171,10 +175,20 @@ class TextDataset(Dataset):
             # add compression/decompression variability to the image:
             img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
             img= Image.open("template.jpeg").convert('L')
-            
+                
             img= (np.array(img)) # convert to numpy array            
-            images[i, :, :]= img # add current image to batch image array
             
+            if self.batch_size>1:
+                images[i, :, :]= img # add current image to batch image array
+            else:
+                images= img
+                if self.forceRGB: # make fake 3-channel image (for testing)
+                    img_n= np.zeros((3, self.height, self.width))
+                    img_n[0,:,:]= images
+                    img_n[1,:,:]= images
+                    img_n[2,:,:]= images
+                    images= img_n
+                
             if self.save_img:
                 filename= 'img' + str(i+1)+ '.png'
                 misc.imsave(filename, img)
@@ -187,11 +201,16 @@ class TextDataset(Dataset):
             wrds= Corpus.strip(string)
             
             for t in range(len(wrds)):
-                if wrds[t] in self.tokens:
-                    ind= self.tokens.index(wrds[t])
+                if wrds[t] in self.vocab:
+                    ind= self.vocab.index(wrds[t])
                     oneHot[ind,i]= 1
                 else:
                     print(wrds[t]+ " not found in dictionary")                    
                
         #sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
-        return images, text_list, oneHot
+        
+        # convert to torch tensors:
+        images= torch.FloatTensor(images)
+        oneHot= torch.LongTensor(oneHot)
+        
+        return images, oneHot, text_list

@@ -16,6 +16,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\corpus_final.txt",
                corpus_dir= os.getcwd() + "\\corpus\\SUBTLEX-US.txt", save_img=False, height= 210, width= 210,
-               max_lines= 12, font_size=12, ppl=7, batch_size= 1)
+               max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
 
-i, s, oh= D.__getitem__()
+i, oh, s= D.__getitem__()
