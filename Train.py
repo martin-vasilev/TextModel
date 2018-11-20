@@ -85,5 +85,9 @@ def main():
     # Loss function
     criterion = nn.CrossEntropyLoss().to(device)
     
+    train_loader = torch.utils.data.DataLoader(
+          CaptionDataset(data_folder, data_name, 'TRAIN', transform=transforms.Compose([normalize])),
+          batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+    
 if __name__ == '__main__':
     main()

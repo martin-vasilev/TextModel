@@ -72,7 +72,7 @@ class Corpus(object):
         newstr= newstr.replace('[', '')
         newstr= newstr.replace(']', '')
         newstr= newstr.replace('$', '')
-        newstr= newstr.replace('/', '')
+        #newstr= newstr.replace('/', ' ')
         newstr= newstr.replace('|', '')
         newstr= newstr.replace("' ", " ")
         
@@ -121,6 +121,9 @@ class Corpus(object):
         # separate into words:
         wrds= newstr.split(" ")
         wrds = list(filter(None, wrds))
+        for k in range(len(wrds)): # to remove apostrophe at the end
+            if wrds[k][len(wrds[k])-1]== "'":
+                wrds[k]= wrds[k][0:len(wrds[k])-2]
         
         if "i" in wrds and lower:
             indices = [i for i, x in enumerate(wrds) if x == "i"]

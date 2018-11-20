@@ -10,34 +10,15 @@ from core.Corpus import Corpus
 class TextDataset(Dataset):
     """Text string dataset."""
 
-    def __init__(self, txt_dir, corpus_dir, N= 20000):
+    def __init__(self, txt_dir, corpus_dir, N= 20000, input_method= "text", batch_size=1, height=120,
+                 width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
+                 save_img= False):
         """
         Input:
-            txt_dir (string): Path to the text corpus file containing the input strings.
-            root_dir (string): Directory with the SUBTLEX-US corpus file (used for getting dictionary).
-            N: number of tokens to be used in the dictionary.
-        """
-        # load txt data:
-        with open(txt_dir, 'r') as myfile:
-            data= myfile.read()
-        self.text= data.split('\n')
-        
-        self.tokens= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
-        self.Ntokens= len(self.tokens)
-
-    def __len__(self):
-        return len(self.text)
-    
-    def GetText(self, input_method= "text", batch_size=32, height=120, width= 480, max_lines= 6,
-                  font_size= 14, ppl=8, V_spacing= 7, uppercase= False, save_img= False):
-        
-        """
-        Generates a batch to be used in the model training. It outputs a matrix (N_batch, H, W) containing 
-        the text images and a list containing the character strings. Note that these are grayscale images, so
-        they always have only 1 channel.
-        
-        Input:
-            input_method: a character denoting what type of text to use. Default ('text') just used natural 
+            txt_dir:      Path to the text corpus file containing the input strings.
+            root_dir:     Directory with the SUBTLEX-US corpus file (used for getting dictionary).
+            N:            number of tokens to be used in the dictionary.
+                          input_method: a character denoting what type of text to use. Default ('text') just used natural 
                           language text taken from the corpus. Alternatively, 'words' creates a "text" 
                           consisting of randomly-generated words (taken from the dictionary, i.e., SUBTLEX-US).
             batch_size:   number of images to use in a batch
@@ -52,10 +33,41 @@ class TextDataset(Dataset):
                           14:8, 12:7,
             V_spacing     Vertical spacing of the text (i.e., how many blank pixels are between lines)  
             uppercase     A logical indicating whether to format the text uppercase or not
-            save_img      A logical indicating whether to save images locally (for testing)
+            save_img      A logical indicating whether to save the images locally (for testing)
+        """
+        # load txt data:
+        with open(txt_dir, 'r') as myfile:
+            data= myfile.read()
+        self.text= data.split('\n')
+        
+        self.tokens= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
+        self.Ntokens= len(self.tokens)
+        self.input_method= input_method
+        self.batch_size= batch_size
+        self.height= height
+        self.width= width
+        self.max_lines= max_lines
+        self.font_size= font_size
+        self.ppl= ppl
+        self.V_spacing= V_spacing
+        self.uppercase= uppercase
+        self.save_img= save_img
+
+    def __len__(self):
+        return len(self.text)
+    
+    def __getitem__(self, item= None):
+        
+        """
+        Generates input to be used in the model training. It outputs a matrix (N_batch, H, W) containing 
+        the text images and a list containing the character strings. Note that these are grayscale images, so
+        they always have only 1 channel.
+        
+        Input:
+            item:         index of the item to be used for generating the output. If None, a random item is taken.
             
         Output:
-            A dict containing the image matrix and text list
+                          Generated image, text string, and one-hot vector
         """
     
         import random
@@ -64,17 +76,20 @@ class TextDataset(Dataset):
         from PIL import Image, ImageDraw, ImageFont#, ImageFilter
         from scipy import misc
         
-        images = np.zeros((batch_size, height,width))
-        oneHot = np.zeros((self.Ntokens, batch_size))
+        images = np.zeros((self.batch_size, self.height, self.width))
+        oneHot = np.zeros((self.Ntokens, self.batch_size))
         text_list= []
         
         # take random text strings:
-        if input_method== "text":
-            batch_texts= random.sample(self.text, batch_size)
-        elif input_method== "words": # random word input method
+        if self.input_method== "text":
+            if item is None: # take random sample if item number not provided
+                batch_texts= random.sample(self.text, self.batch_size)
+            else:
+                batch_texts= self.text[item]
+        elif self.input_method== "words": # random word input method
             batch_texts= []
-            words= random.sample(self.tokens, batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
-            for k in range(batch_size):
+            words= random.sample(self.tokens, self.batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
+            for k in range(self.batch_size):
                 string= " ".join(words[0:120])
                 batch_texts.append(string)
                 del words[0:120] # remove selection from the remaining words
@@ -82,7 +97,7 @@ class TextDataset(Dataset):
             sys.exit("Input method not supported!")
         
         # Generate text strings that will be used in the batch:
-        for i in range(batch_size): # for each element in batch size..
+        for i in range(self.batch_size): # for each element in batch size..
     
             useWords= batch_texts[i].split(' ')
             textDone= False
@@ -91,27 +106,27 @@ class TextDataset(Dataset):
             line=1
             string= ""
             while not textDone:
-                if currPos+ (len(useWords[w])+1)*ppl < width-10: # if text still fits on current line..
+                if currPos+ (len(useWords[w])+1)*self.ppl < self.width-10: # if text still fits on current line..
                     if w>0:
                         string= string + " "+ useWords[w]
-                        currPos= currPos+ len(" "+ useWords[w])*ppl
+                        currPos= currPos+ len(" "+ useWords[w])*self.ppl
                     else:
                         string= string + useWords[w]
-                        currPos= currPos+ len(useWords[w])*ppl
+                        currPos= currPos+ len(useWords[w])*self.ppl
                     
                 else: # therwise move on next line..
                     line= line+1
-                    if line> max_lines:
+                    if line> self.max_lines:
                         textDone= True
                     else:
-                        currPos= 1 + len(useWords[w])*ppl
+                        currPos= 1 + len(useWords[w])*self.ppl
                         string= string + "\n"+ useWords[w] # break line
                 
                 #textDone= line== max_lines and currPos+ (len(useWords[w])+1)*ppl > width-20
                 w= w+1 # go to next word
                 if w== len(useWords): # no more text to use, stop
                     textDone= True
-            if uppercase:        
+            if self.uppercase:        
                 string= string.upper() # make string upper case
             else:
                 string= string.lower() # make string lower case
@@ -119,7 +134,7 @@ class TextDataset(Dataset):
             
             ############
             # Generate images using the text:
-            font = ImageFont.truetype('Fonts/cour.ttf', font_size)
+            font = ImageFont.truetype('Fonts/cour.ttf', self.font_size)
             
             # open a random canvas image as background:
             img= Image.open("canvas/" + str(np.random.randint(1, 10))+ ".jpg").convert('L')
@@ -136,14 +151,14 @@ class TextDataset(Dataset):
                 xGuess= np.random.randint(1, canvWidth) # guess x start value
                 yGuess= np.random.randint(1, canvHeight) # guess y start value
                 
-                if (xGuess + width) <= canvWidth:
+                if (xGuess + self.width) <= canvWidth:
                     x1= xGuess
-                    x2= xGuess+ width
+                    x2= xGuess+ self.width
                     xDone= True
                 
-                if (yGuess+ height) <= canvHeight:
+                if (yGuess+ self.height) <= canvHeight:
                     y1= yGuess
-                    y2= yGuess + height
+                    y2= yGuess + self.height
                     yDone= True
                     
                 done= yDone and xDone # selection is ok if there is enough space to cut
@@ -151,7 +166,7 @@ class TextDataset(Dataset):
             img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
             
             d = ImageDraw.Draw(img) # draw canvas
-            d.multiline_text((1,1), string, font= font, spacing= V_spacing, align= "left") # draw text
+            d.multiline_text((1,1), string, font= font, spacing= self.V_spacing, align= "left") # draw text
             
             # add compression/decompression variability to the image:
             img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
@@ -160,12 +175,15 @@ class TextDataset(Dataset):
             img= (np.array(img)) # convert to numpy array            
             images[i, :, :]= img # add current image to batch image array
             
-            if save_img:
+            if self.save_img:
                 filename= 'img' + str(i+1)+ '.png'
                 misc.imsave(filename, img)
                 
             # Turn text into a one-hot vector:
             string= string.replace('\n', ' ')
+#            string= string.replace('-', ' ')
+#            string= string.replace('/', '')
+#            string= string.replace("\\", ' ')
             wrds= Corpus.strip(string)
             
             for t in range(len(wrds)):
@@ -173,32 +191,7 @@ class TextDataset(Dataset):
                     ind= self.tokens.index(wrds[t])
                     oneHot[ind,i]= 1
                 else:
-                    print(wrds[t]+ " not found in dictionary")
-#                    # to deal with compound words which are not detected for some reason..
-#                    Done= False
-#                    st= ""
-#                    count= 0
-#                    while not Done:
-#                        st= st+ wrds[t][count]
-#                        if st not in self.tokens:
-#                            count= count+1
-#                        else:
-#                            st1= st
-#                            ind= self.tokens.index(st1)
-#                            oneHot[ind,i]= 1
-#                            
-#                            st2= wrds[t].replace(st1, "")
-#                            if st2 in self.tokens:
-#                                ind= self.tokens.index(st2)
-#                                oneHot[ind,i]= 1
-#                            else:
-#                                print(wrds[t]+ " not found in dictionary")
-#                                print(st2)
-#                            Done= True
-#                            
-#                        if count== len(wrds[t]): # prevent inf loop
-#                            Done= True
-                    
+                    print(wrds[t]+ " not found in dictionary")                    
                
-        sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
-        return sample
+        #sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
+        return images, text_list, oneHot
