@@ -12,7 +12,7 @@ class TextDataset(Dataset):
 
     def __init__(self, txt_dir, corpus_dir, N= 20000, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False):
+                 save_img= False, forceRGB= False, transform=None):
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -35,6 +35,7 @@ class TextDataset(Dataset):
             uppercase     A logical indicating whether to format the text uppercase or not
             save_img      A logical indicating whether to save the images locally (for testing)
             forceRGB      Make it output an RGB (3-channel) image (used for testing/ development)
+			transform	  Image transformation (if any)
         """
         # load txt data:
         with open(txt_dir, 'r') as myfile:
@@ -55,6 +56,8 @@ class TextDataset(Dataset):
         self.uppercase= uppercase
         self.save_img= save_img
         self.forceRGB= forceRGB
+		# PyTorch transformation pipeline for the image (normalizing, etc.)
+        self.transform = transform
 
     def __len__(self):
         return len(self.text)
@@ -212,5 +215,8 @@ class TextDataset(Dataset):
         # convert to torch tensors:
         images= torch.FloatTensor(images)
         oneHot= torch.LongTensor(oneHot)
+		
+        if self.transform is not None:
+            images = self.transform(images)
         
-        return images, oneHot, text_list
+        return images, oneHot#, text_list
