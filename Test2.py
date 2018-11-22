@@ -18,4 +18,6 @@ D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\corpus_final.txt",
                corpus_dir= os.getcwd() + "\\corpus\\SUBTLEX-US.txt", save_img=False, height= 210, width= 210,
                max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
 
+w= D.vocab_dict
+
 i, oh, s= D.__getitem__()

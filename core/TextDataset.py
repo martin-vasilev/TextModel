@@ -58,6 +58,17 @@ class TextDataset(Dataset):
         self.forceRGB= forceRGB
 		# PyTorch transformation pipeline for the image (normalizing, etc.)
         self.transform = transform
+        
+        # word dictionary (from vocab:
+        vocab_dict = {}
+        vocab_dict['<pad>'] = 0
+
+        for i in range(self.vocab_size):
+            vocab_dict[self.vocab[i]]= i+1 # +1 because of pad
+        vocab_dict['<unk>'] = i+2
+        vocab_dict['<start>'] = i+3
+        vocab_dict['<end>'] = i+4
+        self.vocab_dict= vocab_dict
 
     def __len__(self):
         return len(self.text)
