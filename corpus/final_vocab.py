@@ -14,6 +14,7 @@ from core.Corpus import Corpus
 
 used_words= []
 
+max_len= 0
 #file = open("corpus_final_checked.txt", "w")
 
 with open("corpus\\corpus_final.txt", 'r') as myfile:
@@ -42,6 +43,8 @@ for i in range(len(text)):
     lsr = [x for x in wrds if x not in out]
     used_words.extend(lsr)
     
+    if len(wrds) > max_len:
+        max_len= len(wrds)
     
     if len(out)>0:
         print("unrecognized token %s" % out)
@@ -59,3 +62,5 @@ for i in range(len(tokensN)):
     file.write('\n')
     
 file.close()
+
+print(max_len)

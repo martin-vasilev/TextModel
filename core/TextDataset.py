@@ -10,15 +10,15 @@ from core.Corpus import Corpus
 class TextDataset(Dataset):
     """Text string dataset."""
 
-    def __init__(self, txt_dir, corpus_dir, N= 20000, input_method= "text", batch_size=1, height=120,
+    def __init__(self, txt_dir, corpus_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False, transform=None):
+                 save_img= False, forceRGB= False, transform=None, max_words= 172):
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
             root_dir:     Directory with the SUBTLEX-US corpus file (used for getting dictionary).
-            N:            number of tokens to be used in the dictionary.
-                          input_method: a character denoting what type of text to use. Default ('text') just used natural 
+            vocab_dir:    Directory of vocabulary txt file
+            input_method: a character denoting what type of text to use. Default ('text') just used natural 
                           language text taken from the corpus. Alternatively, 'words' creates a "text" 
                           consisting of randomly-generated words (taken from the dictionary, i.e., SUBTLEX-US).
             batch_size:   number of images to use in a batch
@@ -41,7 +41,11 @@ class TextDataset(Dataset):
         with open(txt_dir, 'r') as myfile:
             data= myfile.read()
         self.text= data.split('\n')
-        self.vocab= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
+        
+        with open(vocab_dir, 'r') as myfile:
+            data= myfile.read()
+        self.vocab= data.split('\n')    
+        #self.vocab= Corpus.SUBTLEX(N, corpus_dir) # get N SUBTLEX tokens
         
         # Other parameters:
         self.vocab_size= len(self.vocab)
@@ -56,6 +60,8 @@ class TextDataset(Dataset):
         self.uppercase= uppercase
         self.save_img= save_img
         self.forceRGB= forceRGB
+        self.max_words= max_words
+        
 		# PyTorch transformation pipeline for the image (normalizing, etc.)
         self.transform = transform
         
@@ -95,7 +101,7 @@ class TextDataset(Dataset):
         import torch
         
         images = np.zeros((self.batch_size, self.height, self.width))
-        oneHot = np.zeros((self.vocab_size, self.batch_size))
+        #oneHot = np.zeros((self.vocab_size, self.batch_size))
         text_list= []
         
         # take random text strings:
@@ -214,20 +220,31 @@ class TextDataset(Dataset):
 #            string= string.replace("\\", ' ')
             wrds= Corpus.strip(string)
             
+            word_vec= np.zeros(self.max_words +2)
+            word_vec[0]= self.vocab_dict['<start>']
+            
             for t in range(len(wrds)):
                 if wrds[t] in self.vocab:
-                    ind= self.vocab.index(wrds[t])
-                    oneHot[ind,i]= 1
+                    word_vec[t+1]= self.vocab_dict[wrds[t]]
                 else:
-                    print(wrds[t]+ " not found in dictionary")                    
+                    word_vec[t+1]= self.vocab_dict['<unk>']
+                    print(wrds[t]+ " not found in dictionary") 
+            word_vec[len(wrds)+1]= self.vocab_dict['<end>']
+#            for t in range(len(wrds)):
+#                if wrds[t] in self.vocab:
+#                    ind= self.vocab.index(wrds[t])
+#                    oneHot[ind,i]= 1
+#                else:
+#                    print(wrds[t]+ " not found in dictionary")                    
                
         #sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
         
         # convert to torch tensors:
-        images= torch.FloatTensor(images)
-        oneHot= torch.LongTensor(oneHot)
+        images= torch.FloatTensor(images/ 255.)
+        word_vec= torch.LongTensor(word_vec)
+        #oneHot= torch.LongTensor(oneHot)
 		
         if self.transform is not None:
             images = self.transform(images)
         
-        return images, oneHot#, text_list
+        return images, word_vec, torch.LongTensor([len(wrds)+2]), string #oneHot#, text_list

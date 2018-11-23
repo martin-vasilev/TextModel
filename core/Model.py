@@ -175,7 +175,7 @@ class DecoderWithAttention(nn.Module):
         :param caption_lengths: caption lengths, a tensor of dimension (batch_size, 1)
         :return: scores for vocabulary, sorted encoded captions, decode lengths, weights, sort indices
         """
-
+        #print(caption_lengths)
         batch_size = encoder_out.size(0)
         encoder_dim = encoder_out.size(-1)
         vocab_size = self.vocab_size
@@ -185,6 +185,7 @@ class DecoderWithAttention(nn.Module):
         num_pixels = encoder_out.size(1)
 
         # Sort input data by decreasing lengths; why? apparent below
+        #print(caption_lengths)
         caption_lengths, sort_ind = caption_lengths.squeeze(1).sort(dim=0, descending=True)
         encoder_out = encoder_out[sort_ind]
         encoded_captions = encoded_captions[sort_ind]
@@ -197,9 +198,11 @@ class DecoderWithAttention(nn.Module):
 
         # We won't decode at the <end> position, since we've finished generating as soon as we generate <end>
         # So, decoding lengths are actual lengths - 1
+        #print(caption_lengths)
         decode_lengths = (caption_lengths - 1).tolist()
 
         # Create tensors to hold word predicion scores and alphas
+        #print(decode_lengths)
         predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
         alphas = torch.zeros(batch_size, max(decode_lengths), num_pixels).to(device)
 
