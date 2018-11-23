@@ -122,8 +122,7 @@ class TextDataset(Dataset):
         
         # Generate text strings that will be used in the batch:
         for i in range(self.batch_size): # for each element in batch size..
-    
-            useWords= batch_texts[i].split(' ')
+            useWords= batch_texts.split(' ')
             textDone= False
             currPos= 1 # starting x value of print function
             w= 0
