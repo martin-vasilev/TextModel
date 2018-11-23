@@ -150,12 +150,12 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
     # Batches
     for i, (imgs, caps, caplens, string) in enumerate(train_loader):
         
-        state = {'imgs': imgs,
-             'caps': caps,
-             'caplens': caplens,
-             'string': string}
-        filename = 'checkpoint_' + data_name + '.pth.tar'
-        torch.save(state, filename)
+#        state = {'imgs': imgs,
+#             'caps': caps,
+#             'caplens': caplens,
+#             'string': string}
+#        filename = 'checkpoint_' + data_name + '.pth.tar'
+#        torch.save(state, filename)
         data_time.update(time.time() - start)
 
         # Move to GPU, if available

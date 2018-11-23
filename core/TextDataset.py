@@ -94,6 +94,7 @@ class TextDataset(Dataset):
         """
     
         import random
+        import os
         import sys
         import numpy as np
         from PIL import Image, ImageDraw, ImageFont#, ImageFilter
@@ -194,6 +195,7 @@ class TextDataset(Dataset):
             # add compression/decompression variability to the image:
             img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
             img= Image.open("template.jpeg").convert('L')
+            os.remove("template.jpeg")
                 
             img= (np.array(img)) # convert to numpy array            
             
