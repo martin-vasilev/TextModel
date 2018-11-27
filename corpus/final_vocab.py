@@ -17,7 +17,7 @@ used_words= []
 max_len= 0
 #file = open("corpus_final_checked.txt", "w")
 
-with open("corpus\\corpus_final.txt", 'r') as myfile:
+with open("corpus\\all_corpus.txt", 'r') as myfile:
     data= myfile.read()
     text= data.split('\n')
 text = list(filter(None, text))

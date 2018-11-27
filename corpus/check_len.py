@@ -9,12 +9,12 @@ import os
 #import numpy as np
 from Corpus import Corpus
 #from itertools import chain
-os.chdir('D:\\R\\TextModel\\corpus')
+os.chdir('D:\\COCA\\preproc')
 
 minChar= 60*6
-file = open("corpus_wiki.txt", "w")
+file = open("corpus_acad.txt", "w")
 
-with open("good_checked.txt", 'r') as myfile:
+with open("good_checked_acad.txt", 'r') as myfile:
     data= myfile.read()
     text= data.split('\n')
 text = list(filter(None, text))

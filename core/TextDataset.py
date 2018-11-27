@@ -10,9 +10,9 @@ from core.Corpus import Corpus
 class TextDataset(Dataset):
     """Text string dataset."""
 
-    def __init__(self, txt_dir, corpus_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
+    def __init__(self, txt_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False, transform=None, max_words= 172):
+                 save_img= False, forceRGB= False, transform=None, max_words= 150): # 112 max words
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -108,7 +108,8 @@ class TextDataset(Dataset):
         # take random text strings:
         if self.input_method== "text":
             if item is None: # take random sample if item number not provided
-                batch_texts= random.sample(self.text, self.batch_size)
+                item= np.random.randint(0, len(self.text)-1)
+                batch_texts= self.text[item]
             else:
                 batch_texts= self.text[item]
         elif self.input_method== "words": # random word input method
@@ -193,9 +194,10 @@ class TextDataset(Dataset):
             d.multiline_text((1,1), string, font= font, spacing= self.V_spacing, align= "left") # draw text
             
             # add compression/decompression variability to the image:
-            img.save("template.jpeg", "JPEG", quality=np.random.randint(30, 100))
-            img= Image.open("template.jpeg").convert('L')
-            os.remove("template.jpeg")
+            filename= "temp" + str(item) + ".jpeg"
+            img.save(filename, "JPEG", quality=np.random.randint(30, 100))
+            img= Image.open(filename).convert('L')
+            os.remove(filename)
                 
             img= (np.array(img)) # convert to numpy array            
             
@@ -216,9 +218,6 @@ class TextDataset(Dataset):
                 
             # Turn text into a one-hot vector:
             string= string.replace('\n', ' ')
-#            string= string.replace('-', ' ')
-#            string= string.replace('/', '')
-#            string= string.replace("\\", ' ')
             wrds= Corpus.strip(string)
             
             word_vec= np.zeros(self.max_words +2)
@@ -229,7 +228,7 @@ class TextDataset(Dataset):
                     word_vec[t+1]= self.vocab_dict[wrds[t]]
                 else:
                     word_vec[t+1]= self.vocab_dict['<unk>']
-                    print(wrds[t]+ " not found in dictionary") 
+                    #print(wrds[t]+ " not found in dictionary") 
             word_vec[len(wrds)+1]= self.vocab_dict['<end>']
 #            for t in range(len(wrds)):
 #                if wrds[t] in self.vocab:
@@ -237,8 +236,6 @@ class TextDataset(Dataset):
 #                    oneHot[ind,i]= 1
 #                else:
 #                    print(wrds[t]+ " not found in dictionary")                    
-               
-        #sample= {'images': images, 'text': text_list, 'oneHot': oneHot}
         
         # convert to torch tensors:
         images= torch.FloatTensor(images/ 255.)
@@ -248,4 +245,4 @@ class TextDataset(Dataset):
         if self.transform is not None:
             images = self.transform(images)
         
-        return images, word_vec, torch.LongTensor([len(wrds)+2]), string #oneHot#, text_list
+        return images, word_vec, torch.LongTensor([len(wrds)+2]), string

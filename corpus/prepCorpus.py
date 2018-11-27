@@ -8,31 +8,36 @@ Created on Thu Oct 25 16:20:13 2018
 minChar= 6*60
 
 import os
-os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
+#os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
 
 
 ### Open output file for writing:
-#file = open("COCA_acad.txt", "w") 
-#file = open("COCA_fict.txt", "w") 
-#file = open("COCA_mag.txt", "w") 
-file = open("COCA_news.txt", "w") 
+#file = open("D:\\COCA\\preproc\\COCA_acad.txt", "w") 
+#file = open("D:\\COCA\\preproc\\COCA_fict.txt", "w") 
+#file = open("D:\\COCA\\preproc\\COCA_mag.txt", "w") 
+#file = open("D:\\COCA\\preproc\\COCA_news.txt", "w") 
+file = open("D:\\COCA\\preproc\\COCA_spok.txt", "w") 
+
 
 # Find all files in directory:
-#allFiles= os. listdir("COCA\\acad")
-#allFiles= os. listdir("COCA\\fict")
-#allFiles= os. listdir("COCA\\mag")
-allFiles= os. listdir("COCA\\news")
+#allFiles= os. listdir("D:\\COCA\\acad")
+#allFiles= os. listdir("D:\\COCA\\fict")
+#allFiles= os. listdir("D:\\COCA\\mag")
+#allFiles= os. listdir("D:\\COCA\\news")
+allFiles= os. listdir("D:\\COCA\\spok")
+
 
 #subdir= "acad"
 #subdir= "fict"
 #subdir= "mag"
-subdir= "news"
+#subdir= "news"
+subdir= "spok"
 
 for k in range(len(allFiles)):
     
     print(allFiles[k])
     # load txt data:
-    with open("COCA\\" + subdir +"\\" + allFiles[k], 'r') as myfile:
+    with open("D:\\COCA\\" + subdir +"\\" + allFiles[k], 'r') as myfile:
         data= myfile.read()
         
     ## clean things up:
@@ -81,7 +86,7 @@ for k in range(len(allFiles)):
                 if string[0].isupper():  # save it only if it starts in upper case (i.e., new sentence)
                     import re
                     num= map(int, re.findall(r'\d', string))
-                    if len(num) < len(string)/20: # if numbers in text are max 5% of all chars
+                    if len(list(num)) < len(string)/20: # if numbers in text are max 5% of all chars
                         if string[1]!= ".": # some reference entries
                             if not "Journal" in string and not "ISBN" in string and not "doi:" in string and not "Press" in string and not "conference" in string and not 'http' in string:
                                 

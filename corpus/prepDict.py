@@ -5,25 +5,25 @@ Created on Fri Oct 26 15:10:24 2018
 @author: mvasilev
 """
 
-minChar= 6*60
+minChar= int(6*60)
 
 import os
-os.chdir('C:\\Users\\mvasilev\\TextModel\\corpus')
+os.chdir('D:\\COCA\\preproc')
 import numpy as np
 from Corpus import Corpus
 from itertools import chain
 
 
-tokens= Corpus.SUBTLEX(20000) # get N SUBTLEX tokens
+tokens= Corpus.SUBTLEX(20000, 'D:\\Github\\TextModel\\corpus\\SUBTLEX-US.txt') # get N SUBTLEX tokens
 
-#file = open("good.txt", "w")
-#result= open("result.txt", "w")
+file = open("good.txt", "w")
+result= open("result.txt", "w")
 
-file = open("good.txt", "a")
-result= open("result.txt", "a")
+#file = open("good.txt", "a")
+#result= open("result.txt", "a")
 
 #with open("COCA_news.txt", 'r') as myfile:
-with open("COCA_acad.txt", 'r') as myfile:
+with open("COCA_news.txt", 'r') as myfile:
     data= myfile.read()
     text= data.split('\n')
 
@@ -70,15 +70,36 @@ for i in range(len(text)):
 #        
         maxStrings= len(string)/minChar
         if maxStrings>1:
-               file.write(string[0:minChar])
-               file.write("\n") 
+               str1= string[0:minChar]
+               c= ['.', '!', '?']
+               if str1[len(str1)-1] not in c:
+                   nPos= [pos for pos, char in enumerate(str1) if char in c]
+                   if not nPos:
+                       continue
+                   nPos= max(nPos) # find position to cut
+    
+                   file.write(string[0:nPos])
+                   file.write("\n")
+                   string= string[nPos+1:]
+               else:
+                   file.write(string[0:minChar])
+                   file.write("\n")
+                   string= string[minChar+1:]
                
-               string= string[minChar:]
-               loc= string.find(" ")+1
-               string= string[loc:]
-               if len(string)>= minChar:
+               if string[len(string)-1] not in c:
+                   nPos= [pos for pos, char in enumerate(string) if char in c]
+                   if not nPos:
+                       continue
+                   nPos= max(nPos) # find position to cut
+                   file.write(string[0:nPos])
+                   file.write("\n")
+               else:
                    file.write(string)
-                   file.write("\n")  
+                   file.write("\n")
+                   
+#               if len(string)>= minChar:
+#                   file.write(string)
+#                   file.write("\n")  
 #            for k in range(maxStrings):
 #               file.write(string[cX:cX+minChar])
 #               file.write("\n")

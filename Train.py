@@ -26,7 +26,8 @@ from nltk.translate.bleu_score import corpus_bleu
 
 
 # Data parameters
-data_dir= '\\corpus\\corpus_final.txt'  # location of txt file containing train strings
+train_dir= '\\corpus\\train.txt'  # location of txt file containing train strings
+valid_dir= '\\corpus\\validate.txt'  # location of txt file containing validate strings
 token_dir = '\\corpus\\SUBTLEX-US.txt'  # base name shared by data files
 vocab_dir = '\\corpus\\vocab.txt'  # base name shared by data files
 data_name= 'input'
@@ -60,18 +61,19 @@ checkpoint = None  # path to checkpoint, None if none
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
-Data= TextDataset(txt_dir= os.getcwd() + "\\corpus\\corpus_final.txt", 
-               corpus_dir= os.getcwd() + "\\corpus\\SUBTLEX-US.txt",
+# Load train data set:
+Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
                vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
                save_img=False, height= 210, width= 210,
                max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
 Ntokens= Data.vocab_size # number of unique word tokens
 
-#i, wv, l= Data.__getitem__()
-#
-#wv= wv.numpy()
-#l= l.numpy()
-#i= i.numpy()
+# create separate set for validation:
+ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
+               vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
+               save_img=False, height= 210, width= 210,
+               max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
+
 
 def main():
     """
@@ -80,20 +82,36 @@ def main():
 
     global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, fine_tune_encoder, data_name, word_map
     
-    # Encoder (conv net):
-    encoder= Encoder()
-    encoder.fine_tune(fine_tune_encoder)
-    encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
-                                             lr=encoder_lr) if fine_tune_encoder else None
-                                         
-    # Decoder:
-    decoder = DecoderWithAttention(attention_dim= attention_dim,
-                                       embed_dim= emb_dim,
-                                       decoder_dim= decoder_dim,
-                                       vocab_size= Ntokens,
-                                       dropout= dropout)
-    decoder_optimizer = torch.optim.Adam(params= filter(lambda p: p.requires_grad, decoder.parameters()),
-                                             lr= decoder_lr)
+    
+    # Initialize / load checkpoint
+    if checkpoint is None:
+        # Encoder (conv net):
+        encoder= Encoder()
+        encoder.fine_tune(fine_tune_encoder)
+        encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
+                                                 lr=encoder_lr) if fine_tune_encoder else None
+                                             
+        # Decoder:
+        decoder = DecoderWithAttention(attention_dim= attention_dim,
+                                           embed_dim= emb_dim,
+                                           decoder_dim= decoder_dim,
+                                           vocab_size= Ntokens,
+                                           dropout= dropout)
+        decoder_optimizer = torch.optim.Adam(params= filter(lambda p: p.requires_grad, decoder.parameters()),
+                                                 lr= decoder_lr)
+    else:
+        checkpoint = torch.load(checkpoint)
+        start_epoch = checkpoint['epoch'] + 1
+        epochs_since_improvement = checkpoint['epochs_since_improvement']
+        best_bleu4 = checkpoint['bleu-4']
+        decoder = checkpoint['decoder']
+        decoder_optimizer = checkpoint['decoder_optimizer']
+        encoder = checkpoint['encoder']
+        encoder_optimizer = checkpoint['encoder_optimizer']
+        if fine_tune_encoder is True and encoder_optimizer is None:
+            encoder.fine_tune(fine_tune_encoder)
+            encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
+                                                 lr=encoder_lr)
     
     # Move to GPU, if available
     decoder = decoder.to(device)
@@ -102,7 +120,12 @@ def main():
     # Loss function
     criterion = nn.CrossEntropyLoss().to(device)
     
+    # Training set data loader function (pyTorch)
     train_loader = torch.utils.data.DataLoader(Data, batch_size= batch_size, shuffle= True,
+                                               pin_memory= True)
+    
+    # Validation set data loader function (pyTorch)
+    val_loader= torch.utils.data.DataLoader(ValidData, batch_size= batch_size, shuffle= True,
                                                pin_memory= True)
     
     # Epochs
@@ -123,6 +146,25 @@ def main():
               encoder_optimizer= encoder_optimizer,
               decoder_optimizer= decoder_optimizer,
               epoch= epoch)
+        
+        # One epoch's validation
+        recent_bleu4 = validate(val_loader=val_loader,
+                                encoder=encoder,
+                                decoder=decoder,
+                                criterion=criterion)
+        
+        # Check if there was an improvement
+        is_best = recent_bleu4 > best_bleu4
+        best_bleu4 = max(recent_bleu4, best_bleu4)
+        if not is_best:
+            epochs_since_improvement += 1
+            print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+        else:
+            epochs_since_improvement = 0
+
+        # Save checkpoint
+        save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder, encoder_optimizer,
+                        decoder_optimizer, recent_bleu4, is_best)
         
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
     """
