@@ -72,9 +72,45 @@ class TextDataset(Dataset):
 
         for i in range(self.vocab_size):
             vocab_dict[self.vocab[i]]= i+1 # +1 because of pad
-        vocab_dict['<unk>'] = i+2
-        vocab_dict['<start>'] = i+3
-        vocab_dict['<end>'] = i+4
+        
+        vocab_dict['0'] = i+2
+        vocab_dict['1'] = i+3
+        vocab_dict['2'] = i+4
+        vocab_dict['3'] = i+5
+        vocab_dict['4'] = i+6
+        vocab_dict['5'] = i+7
+        vocab_dict['6'] = i+8
+        vocab_dict['7'] = i+9
+        vocab_dict['8'] = i+10
+        vocab_dict['9'] = i+11
+        vocab_dict['.'] = i+12
+        vocab_dict[','] = i+13
+        vocab_dict['!'] = i+14
+        vocab_dict['?'] = i+15
+        vocab_dict['('] = i+16
+        vocab_dict[')'] = i+17
+        vocab_dict[':'] = i+18
+        vocab_dict[';'] = i+19
+        vocab_dict['"'] = i+20
+        vocab_dict['#'] = i+21
+#        vocab_dict['*'] = i+22
+#        vocab_dict['&'] = i+23
+#        vocab_dict['^'] = i+24
+        vocab_dict['%'] = i+22
+#        vocab_dict['@'] = i+26
+#        vocab_dict['~'] = i+27
+#        vocab_dict['<'] = i+28
+#        vocab_dict['>'] = i+29
+#        vocab_dict['+'] = i+30
+#        vocab_dict['}'] = i+31
+#        vocab_dict['{'] = i+32
+#        vocab_dict['['] = i+33
+#        vocab_dict[']'] = i+34
+#        vocab_dict['$'] = i+35
+#        vocab_dict['|'] = i+36
+        vocab_dict['<unk>'] = i+23
+        vocab_dict['<start>'] = i+24
+        vocab_dict['<end>'] = i+25
         self.vocab_dict= vocab_dict
 
     def __len__(self):
@@ -219,7 +255,7 @@ class TextDataset(Dataset):
                 
             # Turn text into a one-hot vector:
             string= string.replace('\n', ' ')
-            wrds= Corpus.strip(string)
+            wrds= Corpus.strip2(string)
             
             word_vec= np.zeros(self.max_words +2)
             word_vec[0]= self.vocab_dict['<start>']
@@ -229,7 +265,7 @@ class TextDataset(Dataset):
                     word_vec[t+1]= self.vocab_dict[wrds[t]]
                 else:
                     word_vec[t+1]= self.vocab_dict['<unk>']
-                    #print(wrds[t]+ " not found in dictionary") 
+                    #print("'"+wrds[t]+ "'"+ " not found in dictionary") 
             word_vec[len(wrds)+1]= self.vocab_dict['<end>']
 #            for t in range(len(wrds)):
 #                if wrds[t] in self.vocab:

@@ -53,8 +53,8 @@ grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 50  # print training/validation stats every __ batches
-fine_tune_encoder = True  # fine-tune encoder?
-checkpoint = "checkpoint_input.pth.tar"  # path to checkpoint, None if none
+fine_tune_encoder = False  # fine-tune encoder?
+checkpoint = "D:\Github\checkpoint_input.pth.tar"  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -354,7 +354,7 @@ def validate(val_loader, encoder, decoder, criterion):
         assert len(references) == len(hypotheses)
 
     # Calculate BLEU-4 scores
-    bleu4 = corpus_bleu(references, hypotheses, smoothing_function=chencherry.method4)
+    bleu4 = corpus_bleu(references, hypotheses, smoothing_function=chencherry.method2)
 
     print(
         '\n * LOSS - {loss.avg:.3f}, TOP-5 ACCURACY - {top5.avg:.3f}, BLEU-4 - {bleu}\n'.format(

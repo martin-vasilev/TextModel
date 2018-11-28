@@ -23,9 +23,10 @@ i= i.numpy()
 
 import torch
 checkpoint = torch.load('D:\Github\TextModel\input.pth.tar')
-
+  
 a= checkpoint['imgs'].numpy()
 b= a[0,:,:,:]
 caps= checkpoint['caps'].numpy()
 caplens= checkpoint['caplens'].numpy()
 strings= checkpoint['string']
+       
