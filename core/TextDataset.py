@@ -12,7 +12,7 @@ class TextDataset(Dataset):
 
     def __init__(self, txt_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False, transform=None, max_words= 150): # 112 max words
+                 save_img= False, forceRGB= False, transform=None, max_words= 150, train= True): # 112 max words
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -61,6 +61,7 @@ class TextDataset(Dataset):
         self.save_img= save_img
         self.forceRGB= forceRGB
         self.max_words= max_words
+        self.train= train
         
 		# PyTorch transformation pipeline for the image (normalizing, etc.)
         self.transform = transform
@@ -244,5 +245,15 @@ class TextDataset(Dataset):
 		
         if self.transform is not None:
             images = self.transform(images)
-        
-        return images, word_vec, torch.LongTensor([len(wrds)+2]), string
+        if self.train:
+            return images, word_vec, torch.LongTensor([len(wrds)+2]), string
+        else:
+            v2= np.zeros([5, len(word_vec)])
+            v2[0,]= word_vec
+            v2[1,]= word_vec
+            v2[2,]= word_vec
+            v2[3,]= word_vec
+            v2[4,]= word_vec
+            
+            return images, word_vec, torch.LongTensor([len(wrds)+2]), v2
+            

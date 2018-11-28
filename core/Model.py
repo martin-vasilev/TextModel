@@ -19,7 +19,7 @@ class Encoder(nn.Module):
     Encoder.
     """
 
-    def __init__(self, encoded_image_size=14):
+    def __init__(self, encoded_image_size=10):
         super(Encoder, self).__init__()
         self.enc_image_size = encoded_image_size
 

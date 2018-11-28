@@ -22,7 +22,8 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from core.Model import Encoder, DecoderWithAttention
 #from datasets import *
 from core.Utils import *
-from nltk.translate.bleu_score import corpus_bleu
+from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
+chencherry = SmoothingFunction()
 
 
 # Data parameters
@@ -42,7 +43,7 @@ cudnn.benchmark = True  # set to true only if inputs to model are fixed size; ot
 
 # Training parameters
 start_epoch = 0
-epochs = 1#120  # number of epochs to train for (if early stopping is not triggered)
+epochs = 2#120  # number of epochs to train for (if early stopping is not triggered)
 epochs_since_improvement = 0  # keeps track of number of epochs since there's been an improvement in validation BLEU
 batch_size = 16
 workers = 1  # for data-loading; right now, only 1 works with h5py
@@ -52,8 +53,8 @@ grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 best_bleu4 = 0.  # BLEU-4 score right now
 print_freq = 50  # print training/validation stats every __ batches
-fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = None  # path to checkpoint, None if none
+fine_tune_encoder = True  # fine-tune encoder?
+checkpoint = "checkpoint_input.pth.tar"  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -65,14 +66,15 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
                vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
                save_img=False, height= 210, width= 210,
-               max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
+               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= True)
 Ntokens= Data.vocab_size # number of unique word tokens
+word_map= Data.vocab_dict # dictionary of bocabulary and indices
 
 # create separate set for validation:
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
                vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
                save_img=False, height= 210, width= 210,
-               max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
+               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= False)
 
 
 def main():
@@ -352,7 +354,7 @@ def validate(val_loader, encoder, decoder, criterion):
         assert len(references) == len(hypotheses)
 
     # Calculate BLEU-4 scores
-    bleu4 = corpus_bleu(references, hypotheses)
+    bleu4 = corpus_bleu(references, hypotheses, smoothing_function=chencherry.method4)
 
     print(
         '\n * LOSS - {loss.avg:.3f}, TOP-5 ACCURACY - {top5.avg:.3f}, BLEU-4 - {bleu}\n'.format(

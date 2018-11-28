@@ -10,11 +10,10 @@ os.chdir('D:\\Github\\TextModel')
 sys.path.insert(0, './corpus')
 from core.TextDataset import TextDataset
 
-D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\corpus_final.txt", 
-               corpus_dir= os.getcwd() + "\\corpus\\SUBTLEX-US.txt",
+D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\train.txt", 
                vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
-               save_img=False, height= 210, width= 210,
-               max_lines= 12, font_size=12, ppl=7, batch_size= 1, forceRGB=True)
+               save_img=True, height= 210, width= 210,
+               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12)
 
 i, wv, l, s= D.__getitem__()
 
