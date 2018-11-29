@@ -20,10 +20,7 @@ import torchvision.transforms as transforms
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from core.Model import Encoder, DecoderWithAttention
-#from datasets import *
 from core.Utils import *
-from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
-chencherry = SmoothingFunction()
 
 
 # Data parameters
@@ -31,30 +28,28 @@ train_dir= '\\corpus\\train.txt'  # location of txt file containing train string
 valid_dir= '\\corpus\\validate.txt'  # location of txt file containing validate strings
 token_dir = '\\corpus\\SUBTLEX-US.txt'  # base name shared by data files
 vocab_dir = '\\corpus\\vocab.txt'  # base name shared by data files
-data_name= 'input'
+data_name= 'TxtModel'
 
 # Model parameters
 emb_dim = 512  # dimension of word embeddings
 attention_dim = 512  # dimension of attention linear layers
-decoder_dim = 512  # dimension of decoder RNN
+decoder_dim = 512  # dimension of the decoder RNN
 dropout = 0.5
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
 # Training parameters
 start_epoch = 0
-epochs = 2#120  # number of epochs to train for (if early stopping is not triggered)
-epochs_since_improvement = 0  # keeps track of number of epochs since there's been an improvement in validation BLEU
+last_loss= 100 # to keep track of loss after last validation cycle
+epochs = 1#120  # number of epochs to train for
 batch_size = 16
-workers = 1  # for data-loading; right now, only 1 works with h5py
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-best_bleu4 = 0.  # BLEU-4 score right now
-print_freq = 50  # print training/validation stats every __ batches
+print_freq = 50  # print training/validation stats every x batches
 fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = "D:\Github\checkpoint_input.pth.tar"  # path to checkpoint, None if none
+checkpoint = None  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -82,7 +77,7 @@ def main():
     Training and validation.
     """
 
-    global best_bleu4, epochs_since_improvement, checkpoint, start_epoch, fine_tune_encoder, data_name, word_map
+    global checkpoint, start_epoch, fine_tune_encoder, data_name, word_map, last_loss
     
     
     # Initialize / load checkpoint
@@ -104,8 +99,6 @@ def main():
     else:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
-        epochs_since_improvement = checkpoint['epochs_since_improvement']
-        best_bleu4 = checkpoint['bleu-4']
         decoder = checkpoint['decoder']
         decoder_optimizer = checkpoint['decoder_optimizer']
         encoder = checkpoint['encoder']
@@ -132,13 +125,8 @@ def main():
     
     # Epochs
     for epoch in range(start_epoch, epochs):
-        # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
-        if epochs_since_improvement == 20:
-            break
-        if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
-            adjust_learning_rate(decoder_optimizer, 0.8)
-            if fine_tune_encoder:
-                adjust_learning_rate(encoder_optimizer, 0.8)
+        
+        start_epoch= time.time()
                 
         # One epoch's training
         train(train_loader= train_loader,
@@ -150,23 +138,25 @@ def main():
               epoch= epoch)
         
         # One epoch's validation
-        recent_bleu4 = validate(val_loader=val_loader,
+        curr_loss= validate(val_loader=val_loader,
                                 encoder=encoder,
                                 decoder=decoder,
                                 criterion=criterion)
         
-        # Check if there was an improvement
-        is_best = recent_bleu4 > best_bleu4
-        best_bleu4 = max(recent_bleu4, best_bleu4)
-        if not is_best:
-            epochs_since_improvement += 1
-            print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+        
+        # Did the loss go down after last epoch?
+        if curr_loss< last_loss:
+            # Save best one yet (so we don't overwrite)
+            save_checkpoint("BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
+                        decoder_optimizer)
+            last_loss= curr_loss
         else:
-            epochs_since_improvement = 0
-
-        # Save checkpoint
-        save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder, encoder_optimizer,
-                        decoder_optimizer, recent_bleu4, is_best)
+            # Save checkpoint
+            save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer,
+                        decoder_optimizer)
+        end_epoch= time.time()
+        print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
+        
         
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
     """
@@ -271,7 +261,6 @@ def validate(val_loader, encoder, decoder, criterion):
     :param encoder: encoder model
     :param decoder: decoder model
     :param criterion: loss layer
-    :return: BLEU-4 score
     """
     decoder.eval()  # eval mode (no dropout or batchnorm)
     if encoder is not None:
@@ -282,9 +271,6 @@ def validate(val_loader, encoder, decoder, criterion):
     top5accs = AverageMeter()
 
     start = time.time()
-
-    references = list()  # references (true captions) for calculating BLEU-4 score
-    hypotheses = list()  # hypotheses (predictions)
 
     # Batches
     for i, (imgs, caps, caplens, allcaps) in enumerate(val_loader):
@@ -304,7 +290,6 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
-        scores_copy = scores.clone()
         scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
         targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
@@ -329,40 +314,12 @@ def validate(val_loader, encoder, decoder, criterion):
                   'Top-5 Accuracy {top5.val:.3f} ({top5.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
                                                                             loss=losses, top5=top5accs))
 
-        # Store references (true captions), and hypothesis (prediction) for each image
-        # If for n images, we have n hypotheses, and references a, b, c... for each image, we need -
-        # references = [[ref1a, ref1b, ref1c], [ref2a, ref2b], ...], hypotheses = [hyp1, hyp2, ...]
-
-        # References
-        allcaps = allcaps[sort_ind]  # because images were sorted in the decoder
-        for j in range(allcaps.shape[0]):
-            img_caps = allcaps[j].tolist()
-            img_captions = list(
-                map(lambda c: [w for w in c if w not in {word_map['<start>'], word_map['<pad>']}],
-                    img_caps))  # remove <start> and pads
-            references.append(img_captions)
-
-        # Hypotheses
-        _, preds = torch.max(scores_copy, dim=2)
-        preds = preds.tolist()
-        temp_preds = list()
-        for j, p in enumerate(preds):
-            temp_preds.append(preds[j][:decode_lengths[j]])  # remove pads
-        preds = temp_preds
-        hypotheses.extend(preds)
-
-        assert len(references) == len(hypotheses)
-
-    # Calculate BLEU-4 scores
-    bleu4 = corpus_bleu(references, hypotheses, smoothing_function=chencherry.method2)
-
     print(
-        '\n * LOSS - {loss.avg:.3f}, TOP-5 ACCURACY - {top5.avg:.3f}, BLEU-4 - {bleu}\n'.format(
+        '\n * LOSS - {loss.avg:.3f}, TOP-5 ACCURACY - {top5.avg:.3f}\n'.format(
             loss=losses,
-            top5=top5accs,
-            bleu=bleu4))
-
-    return bleu4
+            top5=top5accs))
+    
+    return losses.avg
 
 
 if __name__ == '__main__':
