@@ -8,7 +8,6 @@ Adapted code from: https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Capti
 """
 import os
 import sys
-os.chdir('D:\\Github\\TextModel')
 sys.path.insert(0, './corpus')
 from core.TextDataset import TextDataset
 
@@ -41,15 +40,15 @@ cudnn.benchmark = True  # set to true only if inputs to model are fixed size; ot
 # Training parameters
 start_epoch = 0
 last_loss= 100 # to keep track of loss after last validation cycle
-epochs = 1#120  # number of epochs to train for
-batch_size = 16
+epochs = 3#120  # number of epochs to train for
+batch_size = 16 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 print_freq = 50  # print training/validation stats every x batches
 fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = None  # path to checkpoint, None if none
+checkpoint = None#"checkpoint_BESTTxtModel.pth.tar"  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -244,10 +243,10 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
         # Print status
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data Load Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Top-5 Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(epoch, i, len(train_loader),
+                  'Batch Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data Load Time: {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss: {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Top-5: Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(epoch, i, len(train_loader),
                                                                           batch_time=batch_time,
                                                                           data_time=data_time, loss=losses,
                                                                           top5=top5accs))
@@ -309,9 +308,9 @@ def validate(val_loader, encoder, decoder, criterion):
 
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'
-                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Top-5 Accuracy {top5.val:.3f} ({top5.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
+                  'Batch Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Loss: {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Top-5 Accuracy: {top5.val:.3f} ({top5.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
                                                                             loss=losses, top5=top5accs))
 
     print(
