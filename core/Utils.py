@@ -77,7 +77,7 @@ def clip_gradient(optimizer, grad_clip):
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
 
-def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decoder_optimizer):
+def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decoder_optimizer, last_loss):
     """
     Saves model checkpoint.
 
@@ -95,7 +95,8 @@ def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decod
              'encoder': encoder,
              'decoder': decoder,
              'encoder_optimizer': encoder_optimizer,
-             'decoder_optimizer': decoder_optimizer}
+             'decoder_optimizer': decoder_optimizer,
+             'last_loss': last_loss}
     filename = 'checkpoint_' + data_name + '.pth.tar'
     torch.save(state, filename)
 

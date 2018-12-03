@@ -21,34 +21,36 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from core.Model import Encoder, DecoderWithAttention
 from core.Utils import *
 
+if torch.cuda.is_available():
+    torch.cuda.set_device(0)
 
 # Data parameters
-train_dir= '\\corpus\\train.txt'  # location of txt file containing train strings
-valid_dir= '\\corpus\\validate.txt'  # location of txt file containing validate strings
-token_dir = '\\corpus\\SUBTLEX-US.txt'  # base name shared by data files
-vocab_dir = '\\corpus\\vocab.txt'  # base name shared by data files
-data_name= 'TxtModel'
+train_dir= '/corpus/train_test3.txt'  # location of txt file containing train strings
+valid_dir= '/corpus/validate2.txt'  # location of txt file containing validate strings
+token_dir = '/corpus/SUBTLEX-US.txt'  # base name shared by data files
+vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
+data_name= 'Test_TxtModel'
 
 # Model parameters
-emb_dim = 512  # dimension of word embeddings
-attention_dim = 512  # dimension of attention linear layers
-decoder_dim = 512  # dimension of the decoder RNN
-dropout = 0.5
+emb_dim = 1024#512  # dimension of word embeddings
+attention_dim = 1024#512  # dimension of attention linear layers
+decoder_dim = 1024#512  # dimension of the decoder RNN
+dropout = 0
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
 # Training parameters
 start_epoch = 0
 last_loss= 100 # to keep track of loss after last validation cycle
-epochs = 3#120  # number of epochs to train for
-batch_size = 16 # I run out of memory with 32 on a 6GB GPU
+epochs = 1#120  # number of epochs to train for
+batch_size = 1 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 50  # print training/validation stats every x batches
+print_freq = 16  # print training/validation stats every x batches
 fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = None#"checkpoint_BESTTxtModel.pth.tar"  # path to checkpoint, None if none
+checkpoint = None#"checkpoint_Test_TxtModel.pth.tar"  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -58,15 +60,16 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 
 # Load train data set:
 Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
-               vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
+               vocab_dir= os.getcwd() + vocab_dir,
                save_img=False, height= 210, width= 210,
                max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= True)
-Ntokens= Data.vocab_size # number of unique word tokens
+
 word_map= Data.vocab_dict # dictionary of bocabulary and indices
+Ntokens= len(word_map) # number of unique word tokens
 
 # create separate set for validation:
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
-               vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
+               vocab_dir= os.getcwd() + vocab_dir,
                save_img=False, height= 210, width= 210,
                max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= False)
 
@@ -102,6 +105,7 @@ def main():
         decoder_optimizer = checkpoint['decoder_optimizer']
         encoder = checkpoint['encoder']
         encoder_optimizer = checkpoint['encoder_optimizer']
+        last_loss= checkpoint['last_loss']
         if fine_tune_encoder is True and encoder_optimizer is None:
             encoder.fine_tune(fine_tune_encoder)
             encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
@@ -122,11 +126,14 @@ def main():
     val_loader= torch.utils.data.DataLoader(ValidData, batch_size= batch_size, shuffle= True,
                                                pin_memory= True)
     
+    print("Learning rate: %f\n" % (decoder_optimizer.param_groups[0]['lr'],))
+    
     # Epochs
     for epoch in range(start_epoch, epochs):
         
         start_epoch= time.time()
-                
+        #adjust_learning_rate(decoder_optimizer, 4.2)
+        
         # One epoch's training
         train(train_loader= train_loader,
               encoder= encoder,
@@ -146,13 +153,13 @@ def main():
         # Did the loss go down after last epoch?
         if curr_loss< last_loss:
             # Save best one yet (so we don't overwrite)
-            save_checkpoint("BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
-                        decoder_optimizer)
+            save_checkpoint("Test_BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
+                        decoder_optimizer, last_loss)
             last_loss= curr_loss
         else:
             # Save checkpoint
             save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer,
-                        decoder_optimizer)
+                        decoder_optimizer, last_loss)
         end_epoch= time.time()
         print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
         
@@ -233,7 +240,7 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
             encoder_optimizer.step()
 
         # Keep track of metrics
-        top5 = accuracy(scores, targets, 5)
+        top5 = accuracy(scores, targets, batch_size)
         losses.update(loss.item(), sum(decode_lengths))
         top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
@@ -243,10 +250,10 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
         # Print status
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'Batch Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data Load Time: {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss: {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Top-5: Accuracy {top5.val:.3f} ({top5.avg:.3f})'.format(epoch, i, len(train_loader),
+                  'Batch Time: {batch_time.avg:.3f}\t'
+                  'Data Load Time: {data_time.avg:.3f}\t'
+                  'Loss: {loss.avg:.4f}\t'
+                  'Accuracy: {top5.avg:.3f}'.format(epoch, i, len(train_loader),
                                                                           batch_time=batch_time,
                                                                           data_time=data_time, loss=losses,
                                                                           top5=top5accs))
@@ -300,7 +307,7 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        top5 = accuracy(scores, targets, 5)
+        top5 = accuracy(scores, targets, batch_size)
         top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
@@ -308,9 +315,9 @@ def validate(val_loader, encoder, decoder, criterion):
 
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'
-                  'Batch Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss: {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Top-5 Accuracy: {top5.val:.3f} ({top5.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
+                  'Batch Time: {batch_time.avg:.3f}\t'
+                  'Loss: {loss.avg:.4f}\t'
+                  'Accuracy: {top5.avg:.3f}\t'.format(i, len(val_loader), batch_time=batch_time,
                                                                             loss=losses, top5=top5accs))
 
     print(
