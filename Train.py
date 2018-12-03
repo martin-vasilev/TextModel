@@ -21,34 +21,32 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from core.Model import Encoder, DecoderWithAttention
 from core.Utils import *
 
-if torch.cuda.is_available():
-    torch.cuda.set_device(0)
 
 # Data parameters
-train_dir= '/corpus/train_test3.txt'  # location of txt file containing train strings
-valid_dir= '/corpus/validate2.txt'  # location of txt file containing validate strings
+train_dir= '/corpus/train.txt'  # location of txt file containing train strings
+valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 token_dir = '/corpus/SUBTLEX-US.txt'  # base name shared by data files
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
 data_name= 'Test_TxtModel'
 
 # Model parameters
-emb_dim = 1024#512  # dimension of word embeddings
-attention_dim = 1024#512  # dimension of attention linear layers
-decoder_dim = 1024#512  # dimension of the decoder RNN
-dropout = 0
+emb_dim = 512  # dimension of word embeddings
+attention_dim = 512  # dimension of attention linear layers
+decoder_dim = 512  # dimension of the decoder RNN
+dropout = 0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
 # Training parameters
 start_epoch = 0
-last_loss= 100 # to keep track of loss after last validation cycle
-epochs = 1#120  # number of epochs to train for
-batch_size = 1 # I run out of memory with 32 on a 6GB GPU
+last_loss= 10 # to keep track of loss after last validation cycle
+epochs = 2#120  # number of epochs to train for
+batch_size = 16 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 16  # print training/validation stats every x batches
+print_freq = 10  # print training/validation stats every x batches
 fine_tune_encoder = False  # fine-tune encoder?
 checkpoint = None#"checkpoint_Test_TxtModel.pth.tar"  # path to checkpoint, None if none
 
