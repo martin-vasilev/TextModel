@@ -7,15 +7,8 @@ Created on Tue Nov 20 12:43:20 2018
 Adapted code from: https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning
 """
 
-import os
 import numpy as np
-import h5py
-import json
 import torch
-from scipy.misc import imread, imresize
-from tqdm import tqdm
-from collections import Counter
-from random import seed, choice, sample
 
 
 def init_embedding(embeddings):
@@ -26,42 +19,6 @@ def init_embedding(embeddings):
     """
     bias = np.sqrt(3.0 / embeddings.size(1))
     torch.nn.init.uniform_(embeddings, -bias, bias)
-
-
-def load_embeddings(emb_file, word_map):
-    """
-    Creates an embedding tensor for the specified word map, for loading into the model.
-
-    :param emb_file: file containing embeddings (stored in GloVe format)
-    :param word_map: word map
-    :return: embeddings in the same order as the words in the word map, dimension of embeddings
-    """
-
-    # Find embedding dimension
-    with open(emb_file, 'r') as f:
-        emb_dim = len(f.readline().split(' ')) - 1
-
-    vocab = set(word_map.keys())
-
-    # Create tensor to hold embeddings, initialize
-    embeddings = torch.FloatTensor(len(vocab), emb_dim)
-    init_embedding(embeddings)
-
-    # Read embedding file
-    print("\nLoading embeddings...")
-    for line in open(emb_file, 'r'):
-        line = line.split(' ')
-
-        emb_word = line[0]
-        embedding = list(map(lambda t: float(t), filter(lambda n: n and not n.isspace(), line[1:])))
-
-        # Ignore word if not in train_vocab
-        if emb_word not in vocab:
-            continue
-
-        embeddings[word_map[emb_word]] = torch.FloatTensor(embedding)
-
-    return embeddings, emb_dim
 
 
 def clip_gradient(optimizer, grad_clip):
@@ -136,18 +93,62 @@ def adjust_learning_rate(optimizer, shrink_factor):
     print("The new learning rate is %f\n" % (optimizer.param_groups[0]['lr'],))
 
 
-def accuracy(scores, targets, k):
+def accuracy(list_scores, list_targets):
     """
-    Computes top-k accuracy, from predicted and true labels.
+    Calculates accuracy for each image in the batch
 
-    :param scores: scores from the model
-    :param targets: true labels
-    :param k: k in top-k accuracy
-    :return: top-k accuracy
+    Input:
+        list_scores: a list of token predictions for each image
+        list_targets: a list of actual targets in each image (ground truth)
     """
+    
+    acc= [] # list to hold individual image accuracies
+    for i in range(len(list_scores)):
+        correct= list_targets[i].long() # which are the actual correct tokens for image?
+        _, token= list_scores[i].max(dim= 1) # which are the predicted token by the model?
+        
+        # calculate accuracy for image (predicted/correct)
+        acc.append(((torch.eq(correct, token).sum().item())/len(correct))*100)
+    return acc
 
-    batch_size = targets.size(0)
-    _, ind = scores.topk(k, 1, True, True)
-    correct = ind.eq(targets.view(-1, 1).expand_as(ind))
-    correct_total = correct.view(-1).float().sum()  # 0D tensor
-    return correct_total.item() * (100.0 / batch_size)
+
+def unflatten(tens, indx, lens, multidim= False):
+    """
+    Takes a flattened pad_packed_sequence and returns the item-wise numbers for each element in the batch
+    
+    Input:
+        tens: flattened pytorch tensor after applying the pack_padded_sequence fun
+        indx: tensor containing the number of batch elements for each sequence length
+        lens: tensor containing the length of each batch element, sorted in descending order
+        
+    Output: a list of tensors containing each element of the batch
+    """    
+    
+    import torch
+
+    items= []
+    curr= 0 
+    
+    if not multidim:
+        
+        for i in range(max(indx)):
+            items.append(torch.zeros(lens[i]))
+            
+        for j in range(len(indx)):
+            
+            for k in range(indx[j]):
+                items[k][j]= tens[curr]
+                curr = curr+ 1
+                #print(curr)
+    else:
+        
+        for i in range(max(indx)):
+            items.append(torch.zeros(lens[i], tens.size(1)))
+    
+        for j in range(len(indx)):
+            
+            for k in range(indx[j]):
+                items[k][j, :]= tens[curr, :]
+                curr = curr+ 1
+                #print(curr)
+    return items

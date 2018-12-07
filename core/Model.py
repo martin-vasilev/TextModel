@@ -120,7 +120,7 @@ class DecoderWithAttention(nn.Module):
         self.attention = Attention(encoder_dim, decoder_dim, attention_dim)  # attention network
 
         self.embedding = nn.Embedding(vocab_size, embed_dim)  # embedding layer
-        self.dropout = nn.Dropout(p=self.dropout)
+        self.dropout = nn.Dropout(p= self.dropout)
         self.decode_step = nn.LSTMCell(embed_dim + encoder_dim, decoder_dim, bias=True)  # decoding LSTMCell
         self.init_h = nn.Linear(encoder_dim, decoder_dim)  # linear layer to find initial hidden state of LSTMCell
         self.init_c = nn.Linear(encoder_dim, decoder_dim)  # linear layer to find initial cell state of LSTMCell
@@ -180,7 +180,7 @@ class DecoderWithAttention(nn.Module):
         encoder_dim = encoder_out.size(-1)
         vocab_size = self.vocab_size
 
-        # Flatten image
+        # Flatten image (feature H x feature W):
         encoder_out = encoder_out.view(batch_size, -1, encoder_dim)  # (batch_size, num_pixels, encoder_dim)
         num_pixels = encoder_out.size(1)
 
@@ -203,8 +203,8 @@ class DecoderWithAttention(nn.Module):
 
         # Create tensors to hold word predicion scores and alphas
         #print(decode_lengths)
-        predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device)
-        alphas = torch.zeros(batch_size, max(decode_lengths), num_pixels).to(device)
+        predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(device) # (batch_size, max_caption_len, vocab_size)
+        alphas = torch.zeros(batch_size, max(decode_lengths), num_pixels).to(device) # (batch_size, max_caption_len, num_features)
 
         # At each time-step, decode by
         # attention-weighing the encoder's output based on the decoder's previous hidden state output
@@ -220,6 +220,6 @@ class DecoderWithAttention(nn.Module):
                 (h[:batch_size_t], c[:batch_size_t]))  # (batch_size_t, decoder_dim)
             preds = self.fc(self.dropout(h))  # (batch_size_t, vocab_size)
             predictions[:batch_size_t, t, :] = preds
-            alphas[:batch_size_t, t, :] = alpha
+            alphas[:batch_size_t, t, :] = alpha # ()
 
         return predictions, encoded_captions, decode_lengths, alphas, sort_ind

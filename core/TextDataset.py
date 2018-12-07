@@ -12,7 +12,7 @@ class TextDataset(Dataset):
 
     def __init__(self, txt_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False, transform=None, max_words= 150, train= True): # 112 max words
+                 save_img= False, forceRGB= False, transform=None, max_words= 170, train= True): # 112 max words
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.

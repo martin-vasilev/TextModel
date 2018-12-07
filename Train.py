@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, './corpus')
 from core.TextDataset import TextDataset
 
+import numpy as np
 import time
 import torch.backends.cudnn as cudnn
 import torch.optim
@@ -23,24 +24,23 @@ from core.Utils import *
 
 
 # Data parameters
-train_dir= '/corpus/train.txt'  # location of txt file containing train strings
-valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
-token_dir = '/corpus/SUBTLEX-US.txt'  # base name shared by data files
+train_dir= '/corpus/train_test3.txt'  # location of txt file containing train strings
+valid_dir= '/corpus/validate2.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
-data_name= 'Test_TxtModel'
+data_name= 'try'
 
 # Model parameters
 emb_dim = 512  # dimension of word embeddings
 attention_dim = 512  # dimension of attention linear layers
 decoder_dim = 512  # dimension of the decoder RNN
-dropout = 0.5
+dropout = 0#0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
 # Training parameters
 start_epoch = 0
 last_loss= 10 # to keep track of loss after last validation cycle
-epochs = 2#120  # number of epochs to train for
+epochs = 103  # number of epochs to train for
 batch_size = 16 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
@@ -48,7 +48,7 @@ grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 print_freq = 10  # print training/validation stats every x batches
 fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = None#"checkpoint_Test_TxtModel.pth.tar"  # path to checkpoint, None if none
+checkpoint = "checkpoint_well.pth.tar"#"checkpoint_Test_BESTTest_TxtModel.pth.tar"  # path to checkpoint, None if none
 
 
 # load up data class:
@@ -62,7 +62,7 @@ Data= TextDataset(txt_dir= os.getcwd() + train_dir,
                save_img=False, height= 210, width= 210,
                max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= True)
 
-word_map= Data.vocab_dict # dictionary of bocabulary and indices
+word_map= Data.vocab_dict # dictionary of vocabulary and indices
 Ntokens= len(word_map) # number of unique word tokens
 
 # create separate set for validation:
@@ -181,7 +181,7 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
     batch_time = AverageMeter()  # forward prop. + back prop. time
     data_time = AverageMeter()  # data loading time
     losses = AverageMeter()  # loss (per word decoded)
-    top5accs = AverageMeter()  # top5 accuracy
+    #top5accs = AverageMeter()  # top5 accuracy
 
     start = time.time()
 
@@ -192,27 +192,26 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
 #             'caps': caps,
 #             'caplens': caplens,
 #             'string': string}
-#        filename = 'checkpoint_' + data_name + '.pth.tar'
+#        filename = 'input' + '.pth.tar'
 #        torch.save(state, filename)
         data_time.update(time.time() - start)
 
         # Move to GPU, if available
         imgs = imgs.to(device)
         caps= caps.to(device)
-        #oneHot = oneHot.to(device)
         caplens = caplens.to(device)
 
         # Forward prop.
-        imgs = encoder(imgs)
+        imgs = encoder(imgs) # (batch_size, H_feature, W_feature, N_channels)
         scores, caps_sorted, decode_lengths, alphas, sort_ind = decoder(imgs, caps, caplens)
 
         # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
-        targets = caps_sorted[:, 1:]
+        targets = caps_sorted[:, 1:] # (bacth_size, max_cap_len-1)
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
-        scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-        targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        scores, indx_scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        targets, indx_targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
         # Calculate loss
         loss = criterion(scores, targets)
@@ -236,11 +235,15 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
         decoder_optimizer.step()
         if encoder_optimizer is not None:
             encoder_optimizer.step()
-
+            
+        # extract the element-wise values in the batch:
+        list_targets= unflatten(targets, indx_targets, decode_lengths, False)
+        list_scores= unflatten(scores, indx_scores, decode_lengths, True)
+        
         # Keep track of metrics
-        top5 = accuracy(scores, targets, batch_size)
+        acc = accuracy(list_scores, list_targets)
         losses.update(loss.item(), sum(decode_lengths))
-        top5accs.update(top5, sum(decode_lengths))
+        #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
         start = time.time()
@@ -251,10 +254,12 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
                   'Batch Time: {batch_time.avg:.3f}\t'
                   'Data Load Time: {data_time.avg:.3f}\t'
                   'Loss: {loss.avg:.4f}\t'
-                  'Accuracy: {top5.avg:.3f}'.format(epoch, i, len(train_loader),
+                  'Accuracy: {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f})'.format(epoch, i, len(train_loader),
                                                                           batch_time=batch_time,
                                                                           data_time=data_time, loss=losses,
-                                                                          top5=top5accs))
+                                                                          meanAcc= np.mean(acc),
+                                                                          minAcc= np.min(acc),
+                                                                          maxAcc= np.max(acc)))
 
 
 def validate(val_loader, encoder, decoder, criterion):
@@ -272,8 +277,8 @@ def validate(val_loader, encoder, decoder, criterion):
 
     batch_time = AverageMeter()
     losses = AverageMeter()
-    top5accs = AverageMeter()
-
+    #top5accs = AverageMeter()
+    AllAcc= [] # collect all accuracies to caclulate avg for validation stage
     start = time.time()
 
     # Batches
@@ -294,34 +299,40 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Remove timesteps that we didn't decode at, or are pads
         # pack_padded_sequence is an easy trick to do this
-        scores, _ = pack_padded_sequence(scores, decode_lengths, batch_first=True)
-        targets, _ = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        scores, indx_scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
+        targets, indx_targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
 
         # Calculate loss
         loss = criterion(scores, targets)
 
         # Add doubly stochastic attention regularization
         loss += alpha_c * ((1. - alphas.sum(dim=1)) ** 2).mean()
+        
+        # extract the element-wise values in the batch:
+        list_targets= unflatten(targets, indx_targets, decode_lengths, False)
+        list_scores= unflatten(scores, indx_scores, decode_lengths, True)
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        top5 = accuracy(scores, targets, batch_size)
-        top5accs.update(top5, sum(decode_lengths))
+        acc = accuracy(list_scores, list_targets)
+        #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
         start = time.time()
+        AllAcc.append(acc)
 
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'
                   'Batch Time: {batch_time.avg:.3f}\t'
                   'Loss: {loss.avg:.4f}\t'
-                  'Accuracy: {top5.avg:.3f}\t'.format(i, len(val_loader), batch_time=batch_time,
-                                                                            loss=losses, top5=top5accs))
+                  'Accuracy: {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
+                                                                            loss=losses, meanAcc= np.mean(acc),
+                                                                            minAcc= np.mean(acc), maxAcc= np.max(acc)))
 
     print(
-        '\n * LOSS - {loss.avg:.3f}, TOP-5 ACCURACY - {top5.avg:.3f}\n'.format(
+        '\n * LOSS - {loss.avg:.3f}, ACCURACY - {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f}) \n'.format(
             loss=losses,
-            top5=top5accs))
+            meanAcc= np.mean(AllAcc), minAcc= np.min(AllAcc), maxAcc= np.max(AllAcc)))
     
     return losses.avg
 
