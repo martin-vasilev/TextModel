@@ -21,11 +21,14 @@ from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from core.Model import Encoder, DecoderWithAttention
 from core.Utils import *
+from operator import itemgetter
+from PIL import Image
+from gif_eli import generateGIF
 
 
 # Data parameters
 train_dir= '/corpus/train_test3.txt'  # location of txt file containing train strings
-valid_dir= '/corpus/validate2.txt'  # location of txt file containing validate strings
+valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
 data_name= 'try'
 
@@ -33,23 +36,23 @@ data_name= 'try'
 emb_dim = 512  # dimension of word embeddings
 attention_dim = 512  # dimension of attention linear layers
 decoder_dim = 512  # dimension of the decoder RNN
-dropout = 0#0.5
+dropout = 0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
 
 # Training parameters
 start_epoch = 0
 last_loss= 10 # to keep track of loss after last validation cycle
-epochs = 103  # number of epochs to train for
-batch_size = 16 # I run out of memory with 32 on a 6GB GPU
+epochs = 5  # number of epochs to train for
+batch_size = 8 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 print_freq = 10  # print training/validation stats every x batches
-fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = "checkpoint_well.pth.tar"#"checkpoint_Test_BESTTest_TxtModel.pth.tar"  # path to checkpoint, None if none
-
+fine_tune_encoder = True  # fine-tune encoder?
+checkpoint = "checkpoint_Test_BESTtry.pth.tar"#"checkpoint_Test_BESTTest_TxtModel.pth.tar"  # path to checkpoint, None if none
+save_worst_image= True # save the worst image (in terms of accuracy) for later inspection/ testing
 
 # load up data class:
 
@@ -130,7 +133,7 @@ def main():
     for epoch in range(start_epoch, epochs):
         
         start_epoch= time.time()
-        #adjust_learning_rate(decoder_optimizer, 4.2)
+        #adjust_learning_rate(decoder_optimizer, 0.5)
         
         # One epoch's training
         train(train_loader= train_loader,
@@ -148,18 +151,18 @@ def main():
                                 criterion=criterion)
         
         
-        # Did the loss go down after last epoch?
-        if curr_loss< last_loss:
-            # Save best one yet (so we don't overwrite)
-            save_checkpoint("Test_BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
-                        decoder_optimizer, last_loss)
-            last_loss= curr_loss
-        else:
-            # Save checkpoint
-            save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer,
-                        decoder_optimizer, last_loss)
-        end_epoch= time.time()
-        print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
+#        # Did the loss go down after last epoch?
+#        if curr_loss< last_loss:
+#            # Save best one yet (so we don't overwrite)
+#            save_checkpoint("Test_BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
+#                        decoder_optimizer, last_loss)
+#            last_loss= curr_loss
+#        else:
+#            # Save checkpoint
+#            save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer,
+#                        decoder_optimizer, last_loss)
+#        end_epoch= time.time()
+#        print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
         
         
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
@@ -241,7 +244,7 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
         list_scores= unflatten(scores, indx_scores, decode_lengths, True)
         
         # Keep track of metrics
-        acc = accuracy(list_scores, list_targets)
+        acc, wrong, wrong_ind = accuracy(list_scores, list_targets)
         losses.update(loss.item(), sum(decode_lengths))
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
@@ -271,6 +274,9 @@ def validate(val_loader, encoder, decoder, criterion):
     :param decoder: decoder model
     :param criterion: loss layer
     """
+    
+    global AllAcc, AllWrong, AllWrong_ind
+    
     decoder.eval()  # eval mode (no dropout or batchnorm)
     if encoder is not None:
         encoder.eval()
@@ -279,10 +285,19 @@ def validate(val_loader, encoder, decoder, criterion):
     losses = AverageMeter()
     #top5accs = AverageMeter()
     AllAcc= [] # collect all accuracies to caclulate avg for validation stage
+    AllWrong= [] # collect all wrongly predicted tokens by the model (for testing)
+    AllWrong_ind = [] # collecr token position for all wrongly predicted tokens by the model (for testing)
     start = time.time()
-
+    
     # Batches
-    for i, (imgs, caps, caplens, allcaps) in enumerate(val_loader):
+    for i, (imgs, caps, caplens, rawImage) in enumerate(val_loader):
+        
+        state = {'imgs': imgs,
+             'caps': caps,
+             'caplens': caplens,
+             'rawImage': rawImage}
+        filename = 'VALinput' + '.pth.tar'
+        torch.save(state, filename)
 
         # Move to device, if available
         imgs = imgs.to(device)
@@ -314,12 +329,29 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        acc = accuracy(list_scores, list_targets)
+        acc, wrong, wrong_ind = accuracy(list_scores, list_targets)
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
         start = time.time()
         AllAcc.append(acc)
+        
+        generateGIF(rawImage[sort_ind[0].item(),:,:], alphas, list_scores, list_targets,
+                             word_map, filename= 'gif/'+ 'B'+ str(i)+ '.gif')
+        
+        if save_worst_image:
+            
+            pos= min(enumerate(acc), key=itemgetter(1))[0] # find position of worst image in the batch:
+            actual_pos= sort_ind[pos].item() # get actual position in original batch (due to sorting in LSTM):
+            
+            rawImage= rawImage.numpy() # re-code raw images as numpy array:
+            image= rawImage[actual_pos,:,:] # take image from the bacth
+            image = Image.fromarray(image) # conver to PIL image format
+            image.save("pics/Batch"+ str(i)+ ".jpeg")
+            
+            # append wrong tokens only for the worst image in the batch:
+            AllWrong.extend(wrong[actual_pos]) # collect all wrongly predicted tokens by the model (for testing)
+            AllWrong_ind.extend(wrong_ind[actual_pos])
 
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'

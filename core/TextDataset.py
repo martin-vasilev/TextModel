@@ -197,8 +197,9 @@ class TextDataset(Dataset):
             img.save(filename, "JPEG", quality=np.random.randint(30, 100))
             img= Image.open(filename).convert('L')
             os.remove(filename)
-                
+            
             img= (np.array(img)) # convert to numpy array            
+            rawImage= img # keep a copy of the image (for testing)
             
             if self.batch_size>1:
                 images[i, :, :]= img # add current image to batch image array
@@ -246,12 +247,6 @@ class TextDataset(Dataset):
         if self.train:
             return images, word_vec, torch.LongTensor([len(wrds)+2]), string
         else:
-            v2= np.zeros([5, len(word_vec)])
-            v2[0,]= word_vec
-            v2[1,]= word_vec
-            v2[2,]= word_vec
-            v2[3,]= word_vec
-            v2[4,]= word_vec
             
-            return images, word_vec, torch.LongTensor([len(wrds)+2]), v2
+            return images, word_vec, torch.LongTensor([len(wrds)+2]), rawImage
             

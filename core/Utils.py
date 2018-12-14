@@ -9,6 +9,7 @@ Adapted code from: https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Capti
 
 import numpy as np
 import torch
+from itertools import chain
 
 
 def init_embedding(embeddings):
@@ -103,13 +104,21 @@ def accuracy(list_scores, list_targets):
     """
     
     acc= [] # list to hold individual image accuracies
+    wrong= []
+    wrong_ind= []
     for i in range(len(list_scores)):
         correct= list_targets[i].long() # which are the actual correct tokens for image?
-        _, token= list_scores[i].max(dim= 1) # which are the predicted token by the model?
+        _, token= list_scores[i].max(dim= 1) # which are the predicted tokens by the model?
         
-        # calculate accuracy for image (predicted/correct)
+        # calculate accuracy for image (predicted/correct)*100
         acc.append(((torch.eq(correct, token).sum().item())/len(correct))*100)
-    return acc
+        
+        comp= torch.eq(correct, token)
+        mistakes_ind= (comp == 0).nonzero()
+        mistakes_token= correct[mistakes_ind]
+        wrong.append(list(chain(*mistakes_token.tolist())))
+        wrong_ind.append(list(chain(*mistakes_ind.tolist())))
+    return acc, wrong, wrong_ind
 
 
 def unflatten(tens, indx, lens, multidim= False):
