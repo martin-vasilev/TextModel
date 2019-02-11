@@ -35,7 +35,7 @@ def clip_gradient(optimizer, grad_clip):
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
 
-def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decoder_optimizer, last_loss):
+def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decoder_optimizer):
     """
     Saves model checkpoint.
 
@@ -53,8 +53,7 @@ def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decod
              'encoder': encoder,
              'decoder': decoder,
              'encoder_optimizer': encoder_optimizer,
-             'decoder_optimizer': decoder_optimizer,
-             'last_loss': last_loss}
+             'decoder_optimizer': decoder_optimizer}
     filename = 'checkpoint_' + data_name + '.pth.tar'
     torch.save(state, filename)
 
@@ -94,7 +93,7 @@ def adjust_learning_rate(optimizer, shrink_factor):
     print("The new learning rate is %f\n" % (optimizer.param_groups[0]['lr'],))
 
 
-def accuracy(list_scores, list_targets):
+def accuracy(list_scores, list_targets, word_map):
     """
     Calculates accuracy for each image in the batch
 
@@ -104,8 +103,10 @@ def accuracy(list_scores, list_targets):
     """
     
     acc= [] # list to hold individual image accuracies
-    wrong= []
     wrong_ind= []
+    mistakes = []
+    right= []
+    
     for i in range(len(list_scores)):
         correct= list_targets[i].long() # which are the actual correct tokens for image?
         _, token= list_scores[i].max(dim= 1) # which are the predicted tokens by the model?
@@ -113,12 +114,22 @@ def accuracy(list_scores, list_targets):
         # calculate accuracy for image (predicted/correct)*100
         acc.append(((torch.eq(correct, token).sum().item())/len(correct))*100)
         
+        words= list(word_map.keys()) # word strings
         comp= torch.eq(correct, token)
         mistakes_ind= (comp == 0).nonzero()
-        mistakes_token= correct[mistakes_ind]
-        wrong.append(list(chain(*mistakes_token.tolist())))
+        mistakes_token= token[mistakes_ind]
+        mistakes_right= correct[mistakes_ind]
+        
+        for j in range(len(mistakes_token)): # which are the mistaken words?
+            mistakes.append(words[mistakes_token[j]])
+        
+        for j in range(len(mistakes_right)): # which were the actual correct words?
+            right.append(words[mistakes_right[j]])
+        
         wrong_ind.append(list(chain(*mistakes_ind.tolist())))
-    return acc, wrong, wrong_ind
+        #wrong.append(list(chain(*mistakes_token.tolist())))
+        
+    return acc, mistakes, right, wrong_ind
 
 
 def unflatten(tens, indx, lens, multidim= False):
@@ -161,3 +172,65 @@ def unflatten(tens, indx, lens, multidim= False):
                 curr = curr+ 1
                 #print(curr)
     return items
+
+# generates an animated Gif of the model's performance:
+def generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind, word_map, filename= 'gif/test.gif', upscale= 21,
+                reshapeDim= 10, plot_grid= True):
+    # code adapted from: https://eli.thegreenplace.net/2016/drawing-animated-gifs-with-matplotlib/  
+    
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation
+    import skimage.transform
+    
+    rawImage= rawImage[sort_ind[0].item(),:,:]
+    alphas= list_alphas[0]
+    
+    # tokens from model:
+    _, token= list_scores[0].max(dim= 1)
+    words= list(word_map.keys())
+    
+    # correct word tokens in image:
+    correct= list_targets[0].long()
+    
+    fig, ax = plt.subplots()
+    fig.set_tight_layout(True)
+    #fig.set_tight_layout(False)
+    
+    #ax.imshow(rawImage)
+    #ax.axis('off')
+    ax.tick_params(axis='both', left='off', top='off', right='off', bottom='on',
+                   labelleft='off', labeltop='off', labelright='off', labelbottom='off')
+    
+    def update(i):
+        label = '({0})             {word}'.format(i, word= words[token[i]])
+        print(i)
+        # Update the line and the axes (with a new xlabel). Return a tuple of
+        # "artists" that have to be redrawn for this frame.
+        ax.set_xlabel(label)
+        ax.tick_params(axis='x', colors='white') # psst.. this is a workaround
+        
+        ax.imshow(rawImage, cmap='Greys_r') # cmap to get read of wird grayscale artefact (yellow background)
+        a = alphas[i, :].detach().cpu().numpy().reshape(reshapeDim, reshapeDim)
+        alpha = skimage.transform.pyramid_expand(a, upscale= upscale)
+        ax.imshow(alpha, alpha=0.6)
+        
+        # display correct tokens in green and wrong ones in red:
+        if words[token[i]]== words[correct[i]]:
+            ax.xaxis.label.set_color('green')
+        else:
+            ax.xaxis.label.set_color('red')
+        
+        if plot_grid:
+            # add grid lines:
+            coords = list(range(0, reshapeDim*upscale, upscale))
+            for xc in coords:
+                ax.axvline(x=xc)
+                ax.axhline(y=xc)
+    
+        return ax
+    
+    # FuncAnimation will call the 'update' function for each frame; here
+    # animating over 10 frames, with an interval of 200ms between frames.
+    anim = FuncAnimation(fig, update, frames= np.arange(0, alphas.size(0)), interval=1000, repeat= True, repeat_delay= 1000)
+    anim.save(filename, dpi=80, writer='imagemagick')

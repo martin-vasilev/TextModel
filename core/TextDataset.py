@@ -11,8 +11,9 @@ class TextDataset(Dataset):
     """Text string dataset."""
 
     def __init__(self, txt_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
-                 width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 7, uppercase= False,
-                 save_img= False, forceRGB= False, transform=None, max_words= 170, train= True): # 112 max words
+                 width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 15, uppercase= False,
+                 save_img= False, forceRGB= False, transform=None, max_words= 170, train= True,
+                 plot_grid= False): # 112 max words
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -36,6 +37,7 @@ class TextDataset(Dataset):
             save_img      A logical indicating whether to save the images locally (for testing)
             forceRGB      Make it output an RGB (3-channel) image (used for testing/ development)
 			transform	  Image transformation (if any)
+            plot_grid     A logical indicating whether to plot text grid lines  
         """
         # load txt data:
         with open(txt_dir, 'r') as myfile:
@@ -62,6 +64,8 @@ class TextDataset(Dataset):
         self.forceRGB= forceRGB
         self.max_words= max_words
         self.train= train
+        self.pix_per_line= self.height// self.max_lines
+        self.plot_grid= plot_grid
         
 		# PyTorch transformation pipeline for the image (normalizing, etc.)
         self.transform = transform
@@ -190,8 +194,14 @@ class TextDataset(Dataset):
             img= img.crop(box= (x1, y1, x2, y2)) # crop canvas to fit image size
             
             d = ImageDraw.Draw(img) # draw canvas
-            d.multiline_text((1,1), string, font= font, spacing= self.V_spacing, align= "left") # draw text
+            d.multiline_text((1,6), string, font= font, spacing= self.V_spacing, align= "left") # draw text
             
+            # plot grid lines?
+            if self.plot_grid:
+                # do something
+                coords = list(range(0, self.height, self.pix_per_line))
+                for l in range(len(coords)):
+                    d.line([0, coords[l], self.width, coords[l]], fill= "blue")
             # add compression/decompression variability to the image:
             filename= "temp" + str(item) + ".jpeg"
             img.save(filename, "JPEG", quality=np.random.randint(30, 100))
@@ -213,7 +223,7 @@ class TextDataset(Dataset):
                     images= img_n
                 
             if self.save_img:
-                filename= 'img' + str(i+1)+ '.png'
+                filename= 'img' + str(item)+ '.png'
                 misc.imsave(filename, img)
                 
             # Turn text into a one-hot vector:
@@ -222,25 +232,23 @@ class TextDataset(Dataset):
             
             word_vec= np.zeros(self.max_words +2)
             word_vec[0]= self.vocab_dict['<start>']
+            numbers= ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
             
             for t in range(len(wrds)):
                 if wrds[t] in self.vocab:
                     word_vec[t+1]= self.vocab_dict[wrds[t]]
                 else:
-                    word_vec[t+1]= self.vocab_dict['<unk>']
+                    if wrds[t] in numbers:
+                        word_vec[t+1]= self.vocab_dict['<num>'] # code all numbers as "num"
+                    else:
+                        word_vec[t+1]= self.vocab_dict['<unk>']
                     #print("'"+wrds[t]+ "'"+ " not found in dictionary") 
-            word_vec[len(wrds)+1]= self.vocab_dict['<end>']
-#            for t in range(len(wrds)):
-#                if wrds[t] in self.vocab:
-#                    ind= self.vocab.index(wrds[t])
-#                    oneHot[ind,i]= 1
-#                else:
-#                    print(wrds[t]+ " not found in dictionary")                    
+            
+            word_vec[len(wrds)+1]= self.vocab_dict['<end>']                
         
         # convert to torch tensors:
         images= torch.FloatTensor(images/ 255.)
         word_vec= torch.LongTensor(word_vec)
-        #oneHot= torch.LongTensor(oneHot)
 		
         if self.transform is not None:
             images = self.transform(images)

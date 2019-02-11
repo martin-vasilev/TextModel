@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, './corpus')
 from core.TextDataset import TextDataset
 
+import pandas as pd
 import numpy as np
 import time
 import torch.backends.cudnn as cudnn
@@ -23,14 +24,13 @@ from core.Model import Encoder, DecoderWithAttention
 from core.Utils import *
 from operator import itemgetter
 from PIL import Image
-from gif_eli import generateGIF
 
 
 # Data parameters
-train_dir= '/corpus/train_test3.txt'  # location of txt file containing train strings
+train_dir= '/corpus/train.txt'  # location of txt file containing train strings
 valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
-data_name= 'try'
+data_name= '3L'
 
 # Model parameters
 emb_dim = 512  # dimension of word embeddings
@@ -39,31 +39,31 @@ decoder_dim = 512  # dimension of the decoder RNN
 dropout = 0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
+TrainModel= False # set to false for validation only
 
 # Training parameters
 start_epoch = 0
 last_loss= 10 # to keep track of loss after last validation cycle
-epochs = 5  # number of epochs to train for
+epochs = 4  # number of epochs to train for
 batch_size = 8 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 10  # print training/validation stats every x batches
+print_freq = 50  # print training/validation stats every x batches
 fine_tune_encoder = True  # fine-tune encoder?
-checkpoint = "checkpoint_Test_BESTtry.pth.tar"#"checkpoint_Test_BESTTest_TxtModel.pth.tar"  # path to checkpoint, None if none
-save_worst_image= True # save the worst image (in terms of accuracy) for later inspection/ testing
+checkpoint = "checkpoint_A_3L.pth.tar" # path to checkpoint, None if none
+save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
 
 # load up data class:
-
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
 # Load train data set:
 Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
                vocab_dir= os.getcwd() + vocab_dir,
-               save_img=False, height= 210, width= 210,
-               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= True)
+               height= 252, width= 252, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=15, train= True)
 
 word_map= Data.vocab_dict # dictionary of vocabulary and indices
 Ntokens= len(word_map) # number of unique word tokens
@@ -71,8 +71,8 @@ Ntokens= len(word_map) # number of unique word tokens
 # create separate set for validation:
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
                vocab_dir= os.getcwd() + vocab_dir,
-               save_img=False, height= 210, width= 210,
-               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=12, train= False)
+               height= 252, width= 252, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=15, train= False, save_img=True)
 
 
 def main():
@@ -80,7 +80,7 @@ def main():
     Training and validation.
     """
 
-    global checkpoint, start_epoch, fine_tune_encoder, data_name, word_map, last_loss
+    global checkpoint, start_epoch, fine_tune_encoder, data_name, word_map, TrainModel
     
     
     # Initialize / load checkpoint
@@ -106,7 +106,6 @@ def main():
         decoder_optimizer = checkpoint['decoder_optimizer']
         encoder = checkpoint['encoder']
         encoder_optimizer = checkpoint['encoder_optimizer']
-        last_loss= checkpoint['last_loss']
         if fine_tune_encoder is True and encoder_optimizer is None:
             encoder.fine_tune(fine_tune_encoder)
             encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
@@ -133,36 +132,30 @@ def main():
     for epoch in range(start_epoch, epochs):
         
         start_epoch= time.time()
-        #adjust_learning_rate(decoder_optimizer, 0.5)
+        adjust_learning_rate(decoder_optimizer, 0.25)
         
-        # One epoch's training
-        train(train_loader= train_loader,
-              encoder= encoder,
-              decoder= decoder,
-              criterion= criterion,
-              encoder_optimizer= encoder_optimizer,
-              decoder_optimizer= decoder_optimizer,
-              epoch= epoch)
-        
+        if TrainModel:
+            # One epoch's training
+            train(train_loader= train_loader,
+                  encoder= encoder,
+                  decoder= decoder,
+                  criterion= criterion,
+                  encoder_optimizer= encoder_optimizer,
+                  decoder_optimizer= decoder_optimizer,
+                  epoch= epoch)
+            
+            # save model before validation (in case it crashes)
+            save_checkpoint("A_"+ data_name, epoch, encoder, decoder, encoder_optimizer,
+                            decoder_optimizer)
+            
         # One epoch's validation
-        curr_loss= validate(val_loader=val_loader,
+        validate(val_loader=val_loader,
                                 encoder=encoder,
                                 decoder=decoder,
                                 criterion=criterion)
-        
-        
-#        # Did the loss go down after last epoch?
-#        if curr_loss< last_loss:
-#            # Save best one yet (so we don't overwrite)
-#            save_checkpoint("Test_BEST"+ data_name, epoch, encoder, decoder, encoder_optimizer,
-#                        decoder_optimizer, last_loss)
-#            last_loss= curr_loss
-#        else:
-#            # Save checkpoint
-#            save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer,
-#                        decoder_optimizer, last_loss)
-#        end_epoch= time.time()
-#        print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
+
+        end_epoch= time.time()
+        print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
         
         
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
@@ -275,7 +268,7 @@ def validate(val_loader, encoder, decoder, criterion):
     :param criterion: loss layer
     """
     
-    global AllAcc, AllWrong, AllWrong_ind
+    global AllAcc, AllMistakes, AllRight, AllWrong_ind
     
     decoder.eval()  # eval mode (no dropout or batchnorm)
     if encoder is not None:
@@ -285,17 +278,19 @@ def validate(val_loader, encoder, decoder, criterion):
     losses = AverageMeter()
     #top5accs = AverageMeter()
     AllAcc= [] # collect all accuracies to caclulate avg for validation stage
-    AllWrong= [] # collect all wrongly predicted tokens by the model (for testing)
+    AllMistakes= [] # collect all wrongly predicted tokens by the model (for testing)
+    AllRight= [] # collect the true token that should have been predicted
     AllWrong_ind = [] # collecr token position for all wrongly predicted tokens by the model (for testing)
     start = time.time()
     
     # Batches
-    for i, (imgs, caps, caplens, rawImage) in enumerate(val_loader):
+    for i, (imgs, caps, caplens, rawImage) in enumerate(val_loader): #, coords
         
         state = {'imgs': imgs,
              'caps': caps,
              'caplens': caplens,
              'rawImage': rawImage}
+             #'coords': coords}
         filename = 'VALinput' + '.pth.tar'
         torch.save(state, filename)
 
@@ -316,6 +311,7 @@ def validate(val_loader, encoder, decoder, criterion):
         # pack_padded_sequence is an easy trick to do this
         scores, indx_scores = pack_padded_sequence(scores, decode_lengths, batch_first=True)
         targets, indx_targets = pack_padded_sequence(targets, decode_lengths, batch_first=True)
+        alphas, indx_alphas = pack_padded_sequence(alphas, decode_lengths, batch_first=True)
 
         # Calculate loss
         loss = criterion(scores, targets)
@@ -326,18 +322,20 @@ def validate(val_loader, encoder, decoder, criterion):
         # extract the element-wise values in the batch:
         list_targets= unflatten(targets, indx_targets, decode_lengths, False)
         list_scores= unflatten(scores, indx_scores, decode_lengths, True)
+        list_alphas= unflatten(alphas, indx_alphas, decode_lengths, True)
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        acc, wrong, wrong_ind = accuracy(list_scores, list_targets)
+        acc, mistakes, right, wrong_ind = accuracy(list_scores, list_targets, word_map)
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
         start = time.time()
         AllAcc.append(acc)
-        
-        generateGIF(rawImage[sort_ind[0].item(),:,:], alphas, list_scores, list_targets,
-                             word_map, filename= 'gif/'+ 'B'+ str(i)+ '.gif')
+        AllMistakes.extend(mistakes)
+        AllRight.extend(right)
+        AllWrong_ind.extend(wrong_ind)
+    
         
         if save_worst_image:
             
@@ -350,10 +348,12 @@ def validate(val_loader, encoder, decoder, criterion):
             image.save("pics/Batch"+ str(i)+ ".jpeg")
             
             # append wrong tokens only for the worst image in the batch:
-            AllWrong.extend(wrong[actual_pos]) # collect all wrongly predicted tokens by the model (for testing)
-            AllWrong_ind.extend(wrong_ind[actual_pos])
+            #AllWrong.extend(wrong[actual_pos]) # collect all wrongly predicted tokens by the model (for testing)
+            #AllWrong_ind.extend(wrong_ind[actual_pos])
 
         if i % print_freq == 0:
+#            generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind,
+#                            word_map, filename= 'gif2/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
             print('Validation: [{0}/{1}]\t'
                   'Batch Time: {batch_time.avg:.3f}\t'
                   'Loss: {loss.avg:.4f}\t'
@@ -365,9 +365,28 @@ def validate(val_loader, encoder, decoder, criterion):
         '\n * LOSS - {loss.avg:.3f}, ACCURACY - {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f}) \n'.format(
             loss=losses,
             meanAcc= np.mean(AllAcc), minAcc= np.min(AllAcc), maxAcc= np.max(AllAcc)))
-    
-    return losses.avg
 
 
 if __name__ == '__main__':
     main()
+    
+    df= pd.DataFrame({'Wrong': AllMistakes, 'Right': AllRight})
+    df.to_excel("Val_results.xls")
+    
+    AllWrong_ind = [item for sublist in AllWrong_ind for item in sublist] # turn into 1 list
+    df2= pd.DataFrame({'Index': AllWrong_ind})
+    df2.to_excel("Val_index_errors.xls")
+    
+    # Plot histogram:
+    import matplotlib.pyplot as plt
+
+    # An "interface" to matplotlib.axes.Axes.hist() method
+    n, bins, patches = plt.hist(x= AllWrong_ind, bins='auto', color='#0504aa',
+                                alpha=0.7, rwidth=0.85)
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlabel('Serial position of token')
+    plt.ylabel('Frequency')
+    plt.title('Frequency of errors for each word position in the text')
+    maxfreq = n.max()
+    # Set a clean upper y-axis limit.
+    plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
