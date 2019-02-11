@@ -197,7 +197,7 @@ def generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind, word
     fig.set_tight_layout(True)
     #fig.set_tight_layout(False)
     
-    #ax.imshow(rawImage)
+    ax.imshow(rawImage)
     #ax.axis('off')
     ax.tick_params(axis='both', left='off', top='off', right='off', bottom='on',
                    labelleft='off', labeltop='off', labelright='off', labelbottom='off')

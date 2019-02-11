@@ -26,11 +26,15 @@ from operator import itemgetter
 from PIL import Image
 
 
-# Data parameters
+# Data parameters & settings
 train_dir= '/corpus/train.txt'  # location of txt file containing train strings
 valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
-data_name= '3L'
+data_name= '10x10'
+TrainModel= True # set to false for validation round only
+save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
+save_animation= False
+
 
 # Model parameters
 emb_dim = 512  # dimension of word embeddings
@@ -39,21 +43,18 @@ decoder_dim = 512  # dimension of the decoder RNN
 dropout = 0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU (if available; otherwise, use CPU)
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
-TrainModel= False # set to false for validation only
 
 # Training parameters
 start_epoch = 0
-last_loss= 10 # to keep track of loss after last validation cycle
-epochs = 4  # number of epochs to train for
-batch_size = 8 # I run out of memory with 32 on a 6GB GPU
+epochs = 1  # number of epochs to train for
+batch_size = 16 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 50  # print training/validation stats every x batches
+print_freq = 20  # print training/validation stats every x batches
 fine_tune_encoder = True  # fine-tune encoder?
-checkpoint = "checkpoint_A_3L.pth.tar" # path to checkpoint, None if none
-save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
+checkpoint = None# "checkpoint_A_3L.pth.tar" # path to checkpoint, None if none
 
 # load up data class:
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -62,8 +63,8 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 # Load train data set:
 Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
                vocab_dir= os.getcwd() + vocab_dir,
-               height= 252, width= 252, max_lines= 10, font_size=12, ppl=7,
-               forceRGB=True, V_spacing=15, train= True)
+               height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=11, train= True)#, save_img= True, plot_grid= True)
 
 word_map= Data.vocab_dict # dictionary of vocabulary and indices
 Ntokens= len(word_map) # number of unique word tokens
@@ -71,8 +72,8 @@ Ntokens= len(word_map) # number of unique word tokens
 # create separate set for validation:
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
                vocab_dir= os.getcwd() + vocab_dir,
-               height= 252, width= 252, max_lines= 10, font_size=12, ppl=7,
-               forceRGB=True, V_spacing=15, train= False, save_img=True)
+               height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=11, train= False),# save_img= True, plot_grid= True)
 
 
 def main():
@@ -132,7 +133,7 @@ def main():
     for epoch in range(start_epoch, epochs):
         
         start_epoch= time.time()
-        adjust_learning_rate(decoder_optimizer, 0.25)
+        #adjust_learning_rate(decoder_optimizer, 0.5)
         
         if TrainModel:
             # One epoch's training
@@ -237,7 +238,7 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
         list_scores= unflatten(scores, indx_scores, decode_lengths, True)
         
         # Keep track of metrics
-        acc, wrong, wrong_ind = accuracy(list_scores, list_targets)
+        acc, mistakes, right, wrong_ind = accuracy(list_scores, list_targets, word_map)
         losses.update(loss.item(), sum(decode_lengths))
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
@@ -350,10 +351,13 @@ def validate(val_loader, encoder, decoder, criterion):
             # append wrong tokens only for the worst image in the batch:
             #AllWrong.extend(wrong[actual_pos]) # collect all wrongly predicted tokens by the model (for testing)
             #AllWrong_ind.extend(wrong_ind[actual_pos])
+        
+        if save_animation:
+            generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind,
+                            word_map, filename= 'gif2/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
+
 
         if i % print_freq == 0:
-#            generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind,
-#                            word_map, filename= 'gif2/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
             print('Validation: [{0}/{1}]\t'
                   'Batch Time: {batch_time.avg:.3f}\t'
                   'Loss: {loss.avg:.4f}\t'
