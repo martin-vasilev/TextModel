@@ -13,7 +13,7 @@ class TextDataset(Dataset):
     def __init__(self, txt_dir, vocab_dir, input_method= "text", batch_size=1, height=120,
                  width= 480, max_lines= 6, font_size= 14, ppl=8, V_spacing= 15, uppercase= False,
                  save_img= False, forceRGB= False, transform=None, max_words= 170, train= True,
-                 plot_grid= False): # 112 max words
+                 plot_grid= False, plot_grid_image= False): # 112 max words
         """
         Input:
             txt_dir:      Path to the text corpus file containing the input strings.
@@ -37,7 +37,8 @@ class TextDataset(Dataset):
             save_img      A logical indicating whether to save the images locally (for testing)
             forceRGB      Make it output an RGB (3-channel) image (used for testing/ development)
 			transform	  Image transformation (if any)
-            plot_grid     A logical indicating whether to plot text grid lines  
+            plot_grid     A logical indicating whether to plot text grid lines (vertical ones)
+            plot_grid_image   A logical indicating whether to save a version of the image with grids for each word token (validation)
         """
         # load txt data:
         with open(txt_dir, 'r') as myfile:
@@ -66,6 +67,7 @@ class TextDataset(Dataset):
         self.train= train
         self.pix_per_line= self.height// self.max_lines
         self.plot_grid= plot_grid
+        self.plot_grid_image= plot_grid_image
         
 		# PyTorch transformation pipeline for the image (normalizing, etc.)
         self.transform = transform
@@ -227,8 +229,8 @@ class TextDataset(Dataset):
                 misc.imsave(filename, img)
                 
             # Turn text into a one-hot vector:
-            string= string.replace('\n', ' ')
-            wrds= Corpus.strip2(string)
+            string2= string.replace('\n', ' ')
+            wrds= Corpus.strip2(string2)
             
             word_vec= np.zeros(self.max_words +2)
             word_vec[0]= self.vocab_dict['<start>']
@@ -249,12 +251,107 @@ class TextDataset(Dataset):
         # convert to torch tensors:
         images= torch.FloatTensor(images/ 255.)
         word_vec= torch.LongTensor(word_vec)
-		
+        
+        if not self.train: # get grid lines for token boxes (i.e., pixel coordinates for token location on the image)
+            V_spacing= self.V_spacing-1
+            V_ppl= 11 # vertical height of text
+            punct= [".", ",", "!", "?", "(", ")", ":", ";", "%"] # '"', "#"
+            numbers= ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+            
+            lines= string.split('\n')
+            AllTkn= Corpus.strip2(string.replace("\n", " ")) # all tokens
+            
+            coords= []
+            currY= 6
+            
+            for i in range(len(lines)):
+                words= Corpus.strip2(lines[i]) # get word tokens
+                currX= 1 # reset x on each line
+                
+                if i>0: # increment line y coords
+                    currY= currY+ V_spacing+ V_ppl
+                
+                for j in range(len(words)):
+                    startX= currX # start pixel of word token
+                    endX= currX+ len(words[j])*self.ppl
+                
+                    currX= endX+self.ppl # add empty space
+                    
+                    # special cases- abbrev:
+                    if words[j]== "have" and "'ve" in lines[i]:
+                        startX= startX- self.ppl
+                        endX= endX - 2*self.ppl # -2 bc 1 letter is abbreviated + appostrophe
+                        currX= currX -2*self.ppl
+                        
+                    if words[j]== "are" and "'re" in lines[i]:
+                        startX= startX- self.ppl
+                        endX= endX - self.ppl 
+                        currX= currX - self.ppl
+                        
+                    if words[j]== "will" and "'ll" in lines[i]:
+                        startX= startX- self.ppl
+                        endX= endX - 2* self.ppl # -2 bc 1 letter is abbreviated + appostrophe
+                        currX= currX -2* self.ppl
+                        
+                    if words[j]== "would" and "'d" in lines[i]:
+                        startX= startX- 3* self.ppl
+                        endX= endX - 4* self.ppl 
+                        currX= currX -4* self.ppl
+                        
+                    ## 
+                    if words[j]== "not" and "n't" in lines[i]:
+                        startX= startX- self.ppl
+                        endX= endX - self.ppl
+                        currX= currX - self.ppl
+                    
+                    if words[j]== "am" and "i'm" in lines[i]:
+                        startX= startX- self.ppl
+                        endX= endX - self.ppl
+                        currX= currX - self.ppl
+                        
+                    if words[j] in punct:
+                        startX= startX- self.ppl
+                        endX= endX- self.ppl
+                        currX= currX- self.ppl
+                    if j< len(words)-1:
+                        if words[j] in numbers and words[j+1] in numbers:
+                           currX= currX- self.ppl 
+                    
+                    word_coords= (startX, currY-1, endX, currY+ V_ppl+1) # save coords
+                    coords.append(word_coords)
+            
+            if len(AllTkn) != len(coords):
+                coords= coords[:len(AllTkn)]
+                
+            # output as matrix for easier handling:
+            dim_mat= np.zeros((len(coords), 1, 4))
+
+            for d in range(len(coords)):
+                dim_mat[d,]= coords[d]       
+            
+            if self.plot_grid_image:
+                import matplotlib.pyplot as plt
+                import matplotlib.patches as patches
+                
+                fig, ax = plt.subplots()
+                fig.set_tight_layout(False)
+                ax.tick_params(axis='both', left='off', top='off', right='off', bottom='on',
+                                   labelleft='off', labeltop='off', labelright='off', labelbottom='off')
+                ax.imshow(rawImage, cmap='Greys_r')
+                
+                for k in range(len(coords)):
+                    rect = patches.Rectangle((coords[k][0], coords[k][1]), coords[k][2]- coords[k][0], coords[k][3]- coords[k][1],
+                                             linewidth=1,edgecolor='r',facecolor='none')
+                    ax.add_patch(rect)
+                #plt.show()
+                plt.savefig('grids_' + str(item)+ '.png')
+
+        ###### transform:
         if self.transform is not None:
             images = self.transform(images)
         if self.train:
             return images, word_vec, torch.LongTensor([len(wrds)+2]), string
         else:
             
-            return images, word_vec, torch.LongTensor([len(wrds)+2]), rawImage
+            return images, word_vec, torch.LongTensor([len(wrds)+2]), rawImage, torch.LongTensor(dim_mat)
             

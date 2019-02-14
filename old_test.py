@@ -36,17 +36,36 @@ rawImage= checkpoint['rawImage'].numpy()
 #caplens= checkpoint['caplens'].numpy()
 #strings= checkpoint['string']
 
-wrong_word= []
-words= list(word_map.keys())
-for i in range(len(AllWrong)):
-    wrong_word.append(words[AllWrong[i]])
-    
-with open('wrong_words.txt', "w") as outfile:
-    for entries in wrong_word:
-        outfile.write(entries)
-        outfile.write("\n")
-        
-with open('wrong_ind.txt', "w") as outfile:
-    for entries in AllWrong_ind:
-        outfile.write(str(entries))
-        outfile.write("\n")
+#wrong_word= []
+#words= list(word_map.keys())
+#for i in range(len(AllWrong)):
+#    wrong_word.append(words[AllWrong[i]])
+#    
+#with open('wrong_words.txt', "w") as outfile:
+#    for entries in wrong_word:
+#        outfile.write(entries)
+#        outfile.write("\n")
+#        
+#with open('wrong_ind.txt', "w") as outfile:
+#    for entries in AllWrong_ind:
+#        outfile.write(str(entries))
+#        outfile.write("\n")
+
+
+import os
+import sys
+os.chdir('D:\\Github\\TextModel')
+sys.path.insert(0, './corpus')
+from core.TextDataset import TextDataset
+
+
+D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\train.txt",
+               vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
+               height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=11, train= False, plot_grid_image= True)
+
+i, wv, l, img, coords= D.__getitem__(1)
+
+wv= wv.numpy()
+l= l.numpy()
+i= i.numpy()

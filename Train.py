@@ -31,9 +31,9 @@ train_dir= '/corpus/train.txt'  # location of txt file containing train strings
 valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
 data_name= '10x10'
-TrainModel= True # set to false for validation round only
+TrainModel= False # set to false for validation round only
 save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
-save_animation= False
+save_animation= True
 
 
 # Model parameters
@@ -46,15 +46,15 @@ cudnn.benchmark = True  # set to true only if inputs to model are fixed size; ot
 
 # Training parameters
 start_epoch = 0
-epochs = 1  # number of epochs to train for
-batch_size = 16 # I run out of memory with 32 on a 6GB GPU
+epochs = 5  # number of epochs to train for
+batch_size = 8 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 print_freq = 20  # print training/validation stats every x batches
 fine_tune_encoder = True  # fine-tune encoder?
-checkpoint = None# "checkpoint_A_3L.pth.tar" # path to checkpoint, None if none
+checkpoint =  "checkpoint_A_10x10.pth.tar" # path to checkpoint, None if none
 
 # load up data class:
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -73,7 +73,7 @@ Ntokens= len(word_map) # number of unique word tokens
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
                vocab_dir= os.getcwd() + vocab_dir,
                height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
-               forceRGB=True, V_spacing=11, train= False),# save_img= True, plot_grid= True)
+               forceRGB=True, V_spacing=11, train= False)# save_img= True, plot_grid= True)
 
 
 def main():
@@ -157,7 +157,7 @@ def main():
 
         end_epoch= time.time()
         print("Epoch time: %.3f minutes \n" % ((end_epoch- start_epoch)/60))
-        
+         
         
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
     """
@@ -394,3 +394,4 @@ if __name__ == '__main__':
     maxfreq = n.max()
     # Set a clean upper y-axis limit.
     plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+       

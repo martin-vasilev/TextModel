@@ -175,7 +175,7 @@ def unflatten(tens, indx, lens, multidim= False):
 
 # generates an animated Gif of the model's performance:
 def generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind, word_map, filename= 'gif/test.gif', upscale= 21,
-                reshapeDim= 10, plot_grid= True):
+                reshapeDim= 10, plot_grid= False):
     # code adapted from: https://eli.thegreenplace.net/2016/drawing-animated-gifs-with-matplotlib/  
     
     import numpy as np
