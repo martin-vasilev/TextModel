@@ -10,6 +10,7 @@ Adapted code from: https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Capti
 import numpy as np
 import torch
 from itertools import chain
+import skimage.transform
 
 
 def init_embedding(embeddings):
@@ -93,9 +94,9 @@ def adjust_learning_rate(optimizer, shrink_factor):
     print("The new learning rate is %f\n" % (optimizer.param_groups[0]['lr'],))
 
 
-def accuracy(list_scores, list_targets, word_map):
+def accuracy(list_scores, list_targets, list_alphas, word_map, coords):
     """
-    Calculates accuracy for each image in the batch
+    Calculates accuracy for each image in the batch (including attention correctness)
 
     Input:
         list_scores: a list of token predictions for each image
@@ -106,8 +107,9 @@ def accuracy(list_scores, list_targets, word_map):
     wrong_ind= []
     mistakes = []
     right= []
+    attn_corr= []
     
-    for i in range(len(list_scores)):
+    for i in range(len(list_scores)): # for each image in batch..
         correct= list_targets[i].long() # which are the actual correct tokens for image?
         _, token= list_scores[i].max(dim= 1) # which are the predicted tokens by the model?
         
@@ -129,7 +131,31 @@ def accuracy(list_scores, list_targets, word_map):
         wrong_ind.append(list(chain(*mistakes_ind.tolist())))
         #wrong.append(list(chain(*mistakes_token.tolist())))
         
-    return acc, mistakes, right, wrong_ind
+        # Attentional correctness:
+        alpha= list_alphas[i] # alpha activations for current image
+        ntokens= len(correct)-1 # -1 because of <end>
+        alpha= alpha[:ntokens,:]
+        
+        for k in range(ntokens):
+            # alphas for current token (resize to input image size):
+            alpha_k = alpha[k, :].detach().cpu().numpy().reshape(10, 10) # (10, 10)
+            alpha_k = skimage.transform.pyramid_expand(alpha_k, upscale= 21) # (210, 210)
+            dims= coords[i, k,:, :] # xy dimensions for token on image (1,4)
+            dims= dims[0, :] # (4)
+            
+            # normalize image so that it sums up to 1:
+            alpha_k= alpha_k/np.sum(alpha_k)
+            
+            # take alpha activation only within the token boundaries:
+            x1= dims[0].item() # x start
+            x2= dims[2].item() # x end
+            y1= dims[1].item() # y start
+            y2= dims[3].item() # y end
+            alpha_token= alpha_k[y1:y2, x1:x2] # subset image
+        
+            attn_corr.append(np.sum(alpha_token)) # save attentional correctness for later analysis
+        
+    return acc, mistakes, right, wrong_ind, attn_corr
 
 
 def unflatten(tens, indx, lens, multidim= False):
@@ -232,5 +258,5 @@ def generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind, word
     
     # FuncAnimation will call the 'update' function for each frame; here
     # animating over 10 frames, with an interval of 200ms between frames.
-    anim = FuncAnimation(fig, update, frames= np.arange(0, alphas.size(0)), interval=1000, repeat= True, repeat_delay= 1000)
+    anim = FuncAnimation(fig, update, frames= np.arange(0, alphas.size(0)), interval=750, repeat= True, repeat_delay= 1000)
     anim.save(filename, dpi=80, writer='imagemagick')

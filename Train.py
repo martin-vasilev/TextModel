@@ -33,7 +33,7 @@ vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
 data_name= '10x10'
 TrainModel= False # set to false for validation round only
 save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
-save_animation= True
+save_animation= False # save a gif animation of the model performance
 
 
 # Model parameters
@@ -52,7 +52,7 @@ encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 20  # print training/validation stats every x batches
+print_freq = 10  # print training/validation stats every x batches
 fine_tune_encoder = True  # fine-tune encoder?
 checkpoint =  "checkpoint_A_10x10.pth.tar" # path to checkpoint, None if none
 
@@ -269,7 +269,7 @@ def validate(val_loader, encoder, decoder, criterion):
     :param criterion: loss layer
     """
     
-    global AllAcc, AllMistakes, AllRight, AllWrong_ind
+    global AllAcc, AllMistakes, AllRight, AllWrong_ind, AllAttn_corr
     
     decoder.eval()  # eval mode (no dropout or batchnorm)
     if encoder is not None:
@@ -282,18 +282,19 @@ def validate(val_loader, encoder, decoder, criterion):
     AllMistakes= [] # collect all wrongly predicted tokens by the model (for testing)
     AllRight= [] # collect the true token that should have been predicted
     AllWrong_ind = [] # collecr token position for all wrongly predicted tokens by the model (for testing)
+    AllAttn_corr = [] # attentional correctness for each token
     start = time.time()
     
     # Batches
-    for i, (imgs, caps, caplens, rawImage) in enumerate(val_loader): #, coords
+    for i, (imgs, caps, caplens, rawImage, coords) in enumerate(val_loader): #, coords
         
-        state = {'imgs': imgs,
-             'caps': caps,
-             'caplens': caplens,
-             'rawImage': rawImage}
-             #'coords': coords}
-        filename = 'VALinput' + '.pth.tar'
-        torch.save(state, filename)
+#        state = {'imgs': imgs,
+#             'caps': caps,
+#             'caplens': caplens,
+#             'rawImage': rawImage,
+#             'coords': coords}
+#        filename = 'VALinput' + '.pth.tar'
+#        torch.save(state, filename)
 
         # Move to device, if available
         imgs = imgs.to(device)
@@ -327,7 +328,7 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        acc, mistakes, right, wrong_ind = accuracy(list_scores, list_targets, word_map)
+        acc, mistakes, right, wrong_ind, attn_corr = accuracy(list_scores, list_targets, list_alphas, word_map, coords)
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
@@ -336,7 +337,7 @@ def validate(val_loader, encoder, decoder, criterion):
         AllMistakes.extend(mistakes)
         AllRight.extend(right)
         AllWrong_ind.extend(wrong_ind)
-    
+        AllAttn_corr.extend(attn_corr)
         
         if save_worst_image:
             
@@ -356,7 +357,6 @@ def validate(val_loader, encoder, decoder, criterion):
             generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind,
                             word_map, filename= 'gif2/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
 
-
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'
                   'Batch Time: {batch_time.avg:.3f}\t'
@@ -364,6 +364,8 @@ def validate(val_loader, encoder, decoder, criterion):
                   'Accuracy: {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
                                                                             loss=losses, meanAcc= np.mean(acc),
                                                                             minAcc= np.mean(acc), maxAcc= np.max(acc)))
+            print('Attentional correctness:\t M= {meanAttn:.3f} \t SD= {SDAttn:.3f} \t ({minAttn:.3f} - {maxAttn:.3f}) \n'.format(
+                    meanAttn= np.mean(attn_corr), SDAttn= np.std(attn_corr), minAttn= np.min(attn_corr), maxAttn= np.max(attn_corr)))
 
     print(
         '\n * LOSS - {loss.avg:.3f}, ACCURACY - {meanAcc:.3f} ({minAcc:.3f} - {maxAcc:.3f}) \n'.format(

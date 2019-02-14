@@ -27,9 +27,9 @@ checkpoint = torch.load('D:\Github\TextModel\VALinput.pth.tar')
 imgs= checkpoint['imgs']
 caps= checkpoint['caps']
 caplens= checkpoint['caplens']
-rawImage= checkpoint['rawImage'].numpy()
+rawImage= checkpoint['rawImage']
+coords= checkpoint['coords']
 #rawImage= rawImage[0, :, :]
-
 #a= checkpoint['imgs'].numpy()
 #b= a[0,:,:,:]
 #caps= checkpoint['caps'].numpy()
@@ -64,7 +64,7 @@ D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\train.txt",
                height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
                forceRGB=True, V_spacing=11, train= False, plot_grid_image= True)
 
-i, wv, l, img, coords= D.__getitem__(1)
+i, wv, l, img, coords= D.__getitem__(4)
 
 wv= wv.numpy()
 l= l.numpy()

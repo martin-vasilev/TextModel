@@ -324,7 +324,7 @@ class TextDataset(Dataset):
                 coords= coords[:len(AllTkn)]
                 
             # output as matrix for easier handling:
-            dim_mat= np.zeros((len(coords), 1, 4))
+            dim_mat= np.zeros((self.max_words +2, 1, 4)) # here we pad to the same size because number of dims differs across images
 
             for d in range(len(coords)):
                 dim_mat[d,]= coords[d]       
