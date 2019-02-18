@@ -10,12 +10,13 @@ os.chdir('D:\\Github\\TextModel')
 sys.path.insert(0, './corpus')
 from core.TextDataset import TextDataset
 
-D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\train.txt", 
+D= TextDataset(txt_dir= os.getcwd() + "\\corpus\\validate.txt", 
                vocab_dir= os.getcwd() + "\\corpus\\vocab.txt",
-               save_img=True, height= 252, width= 252,
-               max_lines= 10, font_size=12, ppl=7, batch_size= 1, forceRGB=True, V_spacing=15, plot_grid= False)
+               save_img=False, height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
+               forceRGB=True, V_spacing=11, train= False, plot_grid= False,
+               plot_grid_image= True)
 
-i, wv, l, s= D.__getitem__(3)
+i, wv, l, s, coords= D.__getitem__(823)
 
 wv= wv.numpy()
 l= l.numpy()

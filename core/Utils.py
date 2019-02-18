@@ -94,7 +94,7 @@ def adjust_learning_rate(optimizer, shrink_factor):
     print("The new learning rate is %f\n" % (optimizer.param_groups[0]['lr'],))
 
 
-def accuracy(list_scores, list_targets, list_alphas, word_map, coords):
+def accuracy(list_scores, list_targets, list_alphas, word_map, coords, sort_ind):
     """
     Calculates accuracy for each image in the batch (including attention correctness)
 
@@ -108,6 +108,7 @@ def accuracy(list_scores, list_targets, list_alphas, word_map, coords):
     mistakes = []
     right= []
     attn_corr= []
+    word_len= [] # length of the word in pixels
     
     for i in range(len(list_scores)): # for each image in batch..
         correct= list_targets[i].long() # which are the actual correct tokens for image?
@@ -140,7 +141,7 @@ def accuracy(list_scores, list_targets, list_alphas, word_map, coords):
             # alphas for current token (resize to input image size):
             alpha_k = alpha[k, :].detach().cpu().numpy().reshape(10, 10) # (10, 10)
             alpha_k = skimage.transform.pyramid_expand(alpha_k, upscale= 21) # (210, 210)
-            dims= coords[i, k,:, :] # xy dimensions for token on image (1,4)
+            dims= coords[sort_ind[i].item(), k,:, :] # xy dimensions for token on image (1,4)
             dims= dims[0, :] # (4)
             
             # normalize image so that it sums up to 1:

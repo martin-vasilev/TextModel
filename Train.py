@@ -127,7 +127,7 @@ def main():
     val_loader= torch.utils.data.DataLoader(ValidData, batch_size= batch_size, shuffle= True,
                                                pin_memory= True)
     
-    print("Learning rate: %f\n" % (decoder_optimizer.param_groups[0]['lr'],))
+    print("Learning rate: %f\n" % (decoder_optimizer.param_groups[0]['lr']))
     
     # Epochs
     for epoch in range(start_epoch, epochs):
@@ -328,7 +328,7 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Keep track of metrics
         losses.update(loss.item(), sum(decode_lengths))
-        acc, mistakes, right, wrong_ind, attn_corr = accuracy(list_scores, list_targets, list_alphas, word_map, coords)
+        acc, mistakes, right, wrong_ind, attn_corr = accuracy(list_scores, list_targets, list_alphas, word_map, coords, sort_ind)
         #top5accs.update(top5, sum(decode_lengths))
         batch_time.update(time.time() - start)
 
