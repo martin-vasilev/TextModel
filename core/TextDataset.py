@@ -118,12 +118,29 @@ class TextDataset(Dataset):
             else:
                 batch_texts= self.text[item]
         elif self.input_method== "words": # random word input method
+            self.extra_tokens= {".": 0.050197381848061426, ",": 0.047120642142730866, "!": 0.0008645381544422652, "?": 0.00429955163340679, "(": 0.0011715728854572677, ")": 0.0010669640018258278, ":": 0.0036394702435669033, ";": 0.0008602099702054456, "\\": 0.016251299703785728, "#": 0.0007539696940539737, "%": 8.163621345139732e-05, "<num>": 0.0143638784392834}
             batch_texts= []
-            words= random.sample(self.vocab, self.batch_size*120) # take 120 random words per batch to be safe- we discard the rest later
-            for k in range(self.batch_size):
-                string= " ".join(words[0:120])
-                batch_texts.append(string)
-                del words[0:120] # remove selection from the remaining words
+            words= random.sample(self.vocab[1:19536], self.batch_size*100) # take 120 random words per batch to be safe- we discard the rest later
+            # generate randomly special tokens (e.g., numbers, punctuations marks) using real text probabilities:
+            for tkn in self.extra_tokens:
+                # draw random numbers for curr extra token:
+                rnd= np.random.uniform(0, 1, 100)
+                hits= rnd[rnd<= self.extra_tokens[tkn]] # how many draws meet prob. criterion?
+                # add number of hits to exisiting tokens
+                if tkn== "<num>":
+                    rnd_num= np.random.randint(0, 9, len(hits))
+                    rnd_num= list(map(str, rnd_num))
+                    words.extend(rnd_num)
+                else:
+                    words.extend([tkn]*len(hits))
+            
+            # shuffle new tokens so that they are not always at the end:
+            random.shuffle(words)
+            batch_texts= " ".join(words) # make a string
+#            for k in range(self.batch_size):
+#                string= " ".join(words[0:120])
+#                batch_texts.append(string)
+#                del words[0:120] # remove selection from the remaining words
         else:
             sys.exit("Input method not supported!")
         
@@ -203,7 +220,8 @@ class TextDataset(Dataset):
                 # do something
                 coords = list(range(0, self.height, self.pix_per_line))
                 for l in range(len(coords)):
-                    d.line([0, coords[l], self.width, coords[l]], fill= "blue")
+                    d.line([0, coords[l], self.width, coords[l]], fill= 'green')
+                    d.line([coords[l], 0, coords[l], self.height], fill= 'green')
             # add compression/decompression variability to the image:
             filename= "temp" + str(item) + ".jpeg"
             img.save(filename, "JPEG", quality=np.random.randint(30, 100))
@@ -317,7 +335,7 @@ class TextDataset(Dataset):
                         if words[j] in numbers and words[j+1] in numbers:
                            currX= currX- self.ppl 
                     
-                    word_coords= (startX, currY-1, endX, currY+ V_ppl+1) # save coords
+                    word_coords= (startX, currY-2, endX, currY+ V_ppl+2) # save coords
                     coords.append(word_coords)
             
             if len(AllTkn) != len(coords):

@@ -42,13 +42,10 @@ def save_checkpoint(data_name, epoch, encoder, decoder, encoder_optimizer, decod
 
     :param data_name: base name of processed dataset
     :param epoch: epoch number
-    :param epochs_since_improvement: number of epochs since last improvement in BLEU-4 score
     :param encoder: encoder model
     :param decoder: decoder model
     :param encoder_optimizer: optimizer to update encoder's weights, if fine-tuning
     :param decoder_optimizer: optimizer to update decoder's weights
-    :param bleu4: validation BLEU-4 score for this epoch
-    :param is_best: is this checkpoint the best so far?
     """
     state = {'epoch': epoch,
              'encoder': encoder,
@@ -109,6 +106,9 @@ def accuracy(list_scores, list_targets, list_alphas, word_map, coords, sort_ind)
     right= []
     attn_corr= []
     word_len= [] # length of the word in pixels
+    correct_item= []# the ground truth for each token
+    predicted_item= []  # the token predicted by the model
+    pos= [] # position of token in image
     
     for i in range(len(list_scores)): # for each image in batch..
         correct= list_targets[i].long() # which are the actual correct tokens for image?
@@ -155,8 +155,53 @@ def accuracy(list_scores, list_targets, list_alphas, word_map, coords, sort_ind)
             alpha_token= alpha_k[y1:y2, x1:x2] # subset image
         
             attn_corr.append(np.sum(alpha_token)) # save attentional correctness for later analysis
+            correct_item.append(words[correct[k].item()])
+            predicted_item.append(words[token[k].item()])
+            pos.append(k)
         
-    return acc, mistakes, right, wrong_ind, attn_corr
+    return acc, mistakes, right, wrong_ind, attn_corr, correct_item, predicted_item, pos
+
+
+
+def accuracyTrain(list_scores, list_targets, word_map):
+    """
+    Calculates accuracy for each image in the batch
+    Light-wight version for training (to reduce training times)
+
+    Input:
+        list_scores: a list of token predictions for each image
+        list_targets: a list of actual targets in each image (ground truth)
+    """
+    
+    acc= [] # list to hold individual image accuracies
+    wrong_ind= []
+    mistakes = []
+    right= []
+    
+    for i in range(len(list_scores)):
+        correct= list_targets[i].long() # which are the actual correct tokens for image?
+        _, token= list_scores[i].max(dim= 1) # which are the predicted tokens by the model?
+        
+        # calculate accuracy for image (predicted/correct)*100
+        acc.append(((torch.eq(correct, token).sum().item())/len(correct))*100)
+        
+        words= list(word_map.keys()) # word strings
+        comp= torch.eq(correct, token)
+        mistakes_ind= (comp == 0).nonzero()
+        mistakes_token= token[mistakes_ind]
+        mistakes_right= correct[mistakes_ind]
+        
+        for j in range(len(mistakes_token)): # which are the mistaken words?
+            mistakes.append(words[mistakes_token[j]])
+        
+        for j in range(len(mistakes_right)): # which were the actual correct words?
+            right.append(words[mistakes_right[j]])
+        
+        wrong_ind.append(list(chain(*mistakes_ind.tolist())))
+        #wrong.append(list(chain(*mistakes_token.tolist())))
+        
+    return acc, mistakes, right, wrong_ind
+
 
 
 def unflatten(tens, indx, lens, multidim= False):
