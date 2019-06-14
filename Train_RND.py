@@ -30,9 +30,9 @@ from PIL import Image
 train_dir= '/corpus/train.txt'  # location of txt file containing train strings
 valid_dir= '/corpus/validate.txt'  # location of txt file containing validate strings
 vocab_dir = '/corpus/vocab.txt'  # base name shared by data files
-data_name= '10x10'
-result_filename= 'Val_results'
-TrainModel= False # set to false for validation round only
+data_name= '10x10RND'
+result_filename= 'Val_resultsRND'
+TrainModel= True # set to false for validation round only
 save_worst_image= False # save the worst image (in terms of accuracy) for later inspection/ testing
 save_animation= False # save a gif animation of the model performance
 
@@ -47,17 +47,15 @@ cudnn.benchmark = True  # set to true only if inputs to model are fixed size; ot
 
 # Training parameters
 start_epoch = 0
-epochs = 5  # number of epochs to train for
-batch_size = 8 # I run out of memory with 32 on a 6GB GPU
+epochs = 3  # number of epochs to train for
+batch_size = 16 # I run out of memory with 32 on a 6GB GPU
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
 alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
-print_freq = 1  # print training/validation stats every x batches
+print_freq = 20  # print training/validation stats every x batches
 fine_tune_encoder = True  # fine-tune encoder?
-#checkpoint =  "checkpoint_A_10x10.pth.tar" # path to checkpoint, None if none
-checkpoint =  "old_model_w_penalty.pth.tar" # path to checkpoint, None if none
-
+checkpoint =  "checkpoint_A_10x10RND.pth.tar" # path to checkpoint, None if none
 
 # load up data class:
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -67,7 +65,7 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 Data= TextDataset(txt_dir= os.getcwd() + train_dir, 
                vocab_dir= os.getcwd() + vocab_dir,
                height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
-               forceRGB=True, V_spacing=11, train= True)#, save_img= True, plot_grid= True)
+               forceRGB=True, V_spacing=11, train= True, input_method= "words")#, save_img= True, plot_grid= True)
 
 word_map= Data.vocab_dict # dictionary of vocabulary and indices
 Ntokens= len(word_map) # number of unique word tokens
@@ -76,7 +74,7 @@ Ntokens= len(word_map) # number of unique word tokens
 ValidData= TextDataset(txt_dir= os.getcwd() + valid_dir,
                vocab_dir= os.getcwd() + vocab_dir,
                height= 210, width= 210, max_lines= 10, font_size=12, ppl=7,
-               forceRGB=True, V_spacing=11, train= False)# save_img= True, plot_grid= True)
+               forceRGB=True, V_spacing=11, train= False, input_method= "words")# save_img= True, plot_grid= True)
 
 
 def main():
@@ -136,8 +134,8 @@ def main():
     for epoch in range(start_epoch, epochs):
         
         start_epoch= time.time()
-        adjust_learning_rate(decoder_optimizer, 0.05)
-        adjust_learning_rate(encoder_optimizer, 0.05)
+        adjust_learning_rate(decoder_optimizer, 0.25)
+        adjust_learning_rate(encoder_optimizer, 0.25)
         
         if TrainModel:
             # One epoch's training
@@ -365,7 +363,7 @@ def validate(val_loader, encoder, decoder, criterion):
         
         if save_animation:
             generateGIF(rawImage, list_alphas, list_scores, list_targets, sort_ind,
-                            word_map, filename= 'gif2/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
+                            word_map, filename= 'gifRND/'+ 'B'+ str(i)+ '.gif')#, upscale= 21, reshapeDim= 10)
 
         if i % print_freq == 0:
             print('Validation: [{0}/{1}]\t'
