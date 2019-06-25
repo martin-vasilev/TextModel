@@ -1,0 +1,6 @@
+
+checkpoint_A_10x10RND.pth.tar
+core/__pycache__/Corpus.cpython-37.pyc
+core/__pycache__/Model.cpython-37.pyc
+core/__pycache__/TextDataset.cpython-37.pyc
+*.pyc
